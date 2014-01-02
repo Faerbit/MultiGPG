@@ -8,4 +8,4 @@ Please note that this is very WIP and doesn't work at the moment.
 
 ##Licence
 
-This is beerware, see LICENCE for details
+This is beerware, see LICENCE for details.
