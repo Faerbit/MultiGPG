@@ -1,7 +1,8 @@
 #!/usr/bin/bash
 
 testPrintUsageIfNoOptionWasSpecified() {
-    fail "Implement me!"
+    output=$( ./multigpg.sh | head -n 1)
+    assertSame "$output" "Usage: multigpg OPTION ARCHIVE [FILE]"
 }
 
 testOptionGetsChosenIfSpecified(){
