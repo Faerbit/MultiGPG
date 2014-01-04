@@ -87,10 +87,12 @@ then
         rm $archive\.tar
     elif [[ ${parameters[0]} = "add" ]]
     then
+        #TODO refactor this 
         archive=${parameters[1]}
         decrypted_archive=$(basename $archive .gpg)
         file=${parameters[2]}
         working_dir=/tmp/multigpg/$archive
+        #ask for password a second time to prevent typos
         getPassword
         decrypt
         tar -r $file -f $working_dir/$decrypted_archive
