@@ -55,6 +55,22 @@ getPassword(){
     read -s password
 }
 
+decrypt(){
+    mkdir -p $working_dir
+    gpg --batch --passphrase $password -o "$working_dir/$decrypted_archive" -d $archive
+}
+
+writeback(){
+    gpg --batch --yes --passphrase $password --cipher-algo AES256 -o $archive -c "$working_dir/$decrypted_archive" 
+}
+
+shred(){
+    #recursively shred all files
+    find $working_dir -type f -execdir shred -un 1 '{}' \;
+    rmdir $working_dir
+    rmdir /tmp/multigpg 2> /dev/null
+}
+
 #only start execution if script is executed directly
 if [[ $(basename $0) = "multigpg.sh" ]]
 then
@@ -64,10 +80,21 @@ then
         printUsage
     elif [[ ${parameters[0]} = "create" ]]
     then
-        file=${parameters[1]}
+        archive=${parameters[1]}
         getPassword
-        tar acT /dev/null -f $file\.tar.gz
-        gpg -c --batch --passphrase $password --cipher-algo AES256 $file\.tar.gz
-        rm $file\.tar.gz
+        tar cT /dev/null -f $archive\.tar
+        gpg --batch --passphrase $password --cipher-algo AES256 -c $archive\.tar
+        rm $archive\.tar
+    elif [[ ${parameters[0]} = "add" ]]
+    then
+        archive=${parameters[1]}
+        decrypted_archive=$(basename $archive .gpg)
+        file=${parameters[2]}
+        working_dir=/tmp/multigpg/$archive
+        getPassword
+        decrypt
+        tar -r $file -f $working_dir/$decrypted_archive
+        writeback
+        shred
     fi
 fi
