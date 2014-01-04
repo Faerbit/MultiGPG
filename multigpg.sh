@@ -1,12 +1,12 @@
 #!/usr/bin/bash 
 
 printUsage(){
-    echo "Usage: multigpg MODE ARCHIVE [OPTION]
+    echo "Usage: multigpg MODE ARCHIVE [FILE]
     MODE is one of the following:
     c
     create      : Creates a new GPG-encrypted archive named ARCHIVE. Please specify file name without extensions
     a
-    add         : Adds OPTION to ARCHIVE
+    add         : Adds FILE to ARCHIVE
     e
     edit        : Copies the contents of the archive to a /tmp folder and 
                   opens a custom shell for you to edit the contents
@@ -25,37 +25,50 @@ printUsage(){
 parseParameters(){
     if [[ $1 = "create" || $1 = "c" ]]
     then
-        echo "create $2"
+        mode="create"
     elif [[ $1 = "add" || $1 = "a" ]]
     then
-        echo "add $2 $3"
+        mode="add"
     elif [[ $1 = "edit" || $1 = "e" ]]
     then
-        echo "edit $2"
+        mode="edit"
     elif [[ $1 = "password" || $1 = "pw" ]]
     then
-        echo "password $2"
+        mode="password"
     elif [[ $1 = "writeback" || $1 = "wb" ]]
     then
-        echo "writeback"
+        mode="writeback"
     elif [[ $1 = "discard" || $1 = "d" ]]
     then
-        echo "discard"
+        mode="discard"
     elif [[ $1 = "--help" ]]
     then
-        echo "printUsage"
+        mode="printUsage"
     else
-        echo "printUsage"
+        mode="printUsage"
     fi
+    archive=$2
+    decrypted_archive=$(basename $archive .gpg)
+    working_dir=/tmp/multigpg/$archive
+    file=$3
 }
 
 getPassword(){
-    echo "Please input the password:"
+    echo "Please enter the password:"
     #save password globally
     read -s password
 }
 
+confirmPassword(){
+    echo "Please confirm your password:"
+    read -s confirm_password
+}
+
 decrypt(){
+    while [ -d $working_dir ]
+    do
+        working_dir=$working_dir\_other
+    done
     mkdir -p $working_dir
     gpg --batch --passphrase $password -o "$working_dir/$decrypted_archive" -d $archive
 }
@@ -74,27 +87,35 @@ shred(){
 #only start execution if script is executed directly
 if [[ $(basename $0) = "multigpg.sh" ]]
 then
-    parameters=($(parseParameters "$@"))
-    if [[ ${parameters[0]} = "printUsage" ]]
+    #make variables globally available
+    parseParameters "$@"
+    if [[ $mode = "printUsage" ]]
     then 
         printUsage
-    elif [[ ${parameters[0]} = "create" ]]
+    elif [[ $mode = "create" ]]
     then
-        archive=${parameters[1]}
+        if [ -f $archive\.tar.gpg ]
+        then
+            echo "Archive already exists."
+            exit 1
+        fi
         getPassword
-        tar cT /dev/null -f $archive\.tar
-        gpg --batch --passphrase $password --cipher-algo AES256 -c $archive\.tar
-        rm $archive\.tar
-    elif [[ ${parameters[0]} = "add" ]]
-    then
-        #TODO refactor this 
-        archive=${parameters[1]}
-        decrypted_archive=$(basename $archive .gpg)
-        file=${parameters[2]}
-        working_dir=/tmp/multigpg/$archive
         #ask for password a second time to prevent typos
+        confirmPassword
+        if [[ "$password" = "$confirm_password" ]]
+        then
+            tar cT /dev/null -f $archive\.tar
+            gpg --batch --passphrase $password --cipher-algo AES256 -c $archive\.tar
+            rm $archive\.tar
+        else
+            echo "Passwords didn't match."
+            exit 1
+        fi
+    elif [[ $mode = "add" ]]
+    then
         getPassword
         decrypt
+        read
         tar -r $file -f $working_dir/$decrypted_archive
         writeback
         shred
