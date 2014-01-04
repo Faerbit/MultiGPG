@@ -48,9 +48,13 @@ parseParameters(){
         mode="printUsage"
     fi
     archive=$2
+    file=$3
     decrypted_archive=$(basename $archive .gpg)
     working_dir=/tmp/multigpg/$archive
-    file=$3
+    while [ -d $working_dir ]
+    do
+        working_dir=$working_dir\_other
+    done
 }
 
 getPassword(){
@@ -65,12 +69,11 @@ confirmPassword(){
 }
 
 decrypt(){
-    while [ -d $working_dir ]
-    do
-        working_dir=$working_dir\_other
-    done
     mkdir -p $working_dir
-    gpg --batch --passphrase $password -o "$working_dir/$decrypted_archive" -d $archive
+    if ! $(gpg --batch --passphrase $password -o "$working_dir/$decrypted_archive" -d $archive 2> /dev/null)
+    then
+        return 1
+    fi
 }
 
 writeback(){
@@ -82,6 +85,7 @@ shred(){
     find $working_dir -type f -execdir shred -un 1 '{}' \;
     rmdir $working_dir
     rmdir /tmp/multigpg 2> /dev/null
+    return 0
 }
 
 #only start execution if script is executed directly
@@ -114,9 +118,35 @@ then
     elif [[ $mode = "add" ]]
     then
         getPassword
-        decrypt
+        if ! $(decrypt)
+        then
+            echo "Your password didn't work or something else went wrong."
+            exit 1
+        fi
         tar -r $file -f $working_dir/$decrypted_archive
         writeback
+        shred
+    elif [[ $mode = "password" ]]
+    then
+        getPassword
+        if ! $(decrypt)
+        then
+            echo "Your password didn't work or something else went wrong."
+            exit 1
+        fi
+        #ask for new password
+        echo "Please enter new password:"
+        read -s new_password
+        confirmPassword
+        if [[ "$new_password" = "$confirm_password" ]]
+        then
+            password="$new_password"
+            writeback
+        else
+            echo "Passwords didn't match."
+            shred
+            exit 1
+        fi
         shred
     fi
 fi
