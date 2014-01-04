@@ -49,6 +49,12 @@ parseParameters(){
     fi
 }
 
+getPassword(){
+    echo "Please input the password:"
+    #save password globally
+    read -s password
+}
+
 #only start execution if script is executed directly
 if [[ $(basename $0) = "multigpg.sh" ]]
 then
@@ -56,5 +62,12 @@ then
     if [[ ${parameters[0]} = "printUsage" ]]
     then 
         printUsage
+    elif [[ ${parameters[0]} = "create" ]]
+    then
+        file=${parameters[1]}
+        getPassword
+        tar acT /dev/null -f $file\.tar.gz
+        gpg -c --batch --passphrase $password --cipher-algo AES256 $file\.tar.gz
+        rm $file\.tar.gz
     fi
 fi
