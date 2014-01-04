@@ -115,7 +115,6 @@ then
     then
         getPassword
         decrypt
-        read
         tar -r $file -f $working_dir/$decrypted_archive
         writeback
         shred
