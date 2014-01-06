@@ -96,6 +96,10 @@ untar(){
     tar -C $working_dir/archive -xf $archive
 }
 
+pack_tar(){
+    tar -cf $archive -C $working_dir/archive .
+}
+
 #only start execution if script is executed directly
 if [[ $(basename $0) = "multigpg" ]]
 then

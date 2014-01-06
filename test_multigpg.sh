@@ -4,7 +4,7 @@
 
 firstLineUsage="Usage: multigpg MODE ARCHIVE [FILE]"
 test_working_dir=/tmp/test_multigpg
-cur_dir=$(pwd)
+current_directory=$(pwd)
 
 testPrintUsageIfNoParameterWasSpecified() {
     #check only for the first line of usage
@@ -23,6 +23,11 @@ testPrintUsageIfHelpWasSpecified() {
     local output=$(./multigpg --help | head -n 1)
     assertSame "$output" "$firstLineUsage"
 }
+
+#testCreateMode(){
+#    ./multigpg create test
+
+#}
 
 testClosedTempFileGetDeleted(){
     fail "Implement me!"
@@ -218,20 +223,33 @@ testUntar(){
     assertSame "$test_hash_sum" "$hash_sum"
 }
 
+testpack_Tar(){
+    mkdir archive
+    echo "stuff" > archive/stuff
+    #set global variables
+    working_dir=$test_working_dir
+    archive=archive.tar
+    pack_tar
+    rm -rf archive 
+    untar
+    local ls_output=$(ls archive)
+    assertSame "$ls_output" "stuff"
+}
+
 oneTimeSetUp(){
     source multigpg
 }
 
 setUp(){
     mkdir -p $test_working_dir
-    cd $cur_dir
+    cp $current_directory/multigpg $test_working_dir/multigpg
+    cd $test_working_dir
 }
 
 tearDown(){
     rm -rf $test_working_dir
-    mkdir -p $test_working_dir
     #prevent weird error from shunit2
-    cd $cur_dir
+    cd
 }
 
 #Run the tests/Load the test runner
