@@ -24,10 +24,19 @@ testPrintUsageIfHelpWasSpecified() {
     assertSame "$output" "$firstLineUsage"
 }
 
-#testCreateMode(){
-#    ./multigpg create test
+testCreateMode_samePassword(){
+    local output=$(echo -e "secret\nsecret" | ./multigpg create test | paste -sd " ")
+    local ls_output=$(ls | paste -sd " ")
+    assertSame "$ls_output" "multigpg test.tar.gpg"
+    assertSame "$output" "Please enter the password: Please confirm your password:" 
+}
 
-#}
+testCreateMode_differentPassword(){
+    local output=$(echo -e "secret\nsercet" | ./multigpg create test | paste -sd " ")
+    local ls_output=$(ls | paste -sd " ")
+    assertSame "$ls_output" "multigpg"
+    assertSame "$output" "Please enter the password: Please confirm your password: Passwords didn't match." 
+}
 
 testClosedTempFileGetDeleted(){
     fail "Implement me!"
@@ -132,7 +141,6 @@ testWorkingDirIsChangedIfItAlreadyExists(){
 }
 
 testDecrypt_correctPassword(){
-    cd $test_working_dir
     echo "stuff" > stuff
     local hash_sum=$(sha512sum stuff)
     gpg --batch --passphrase secret --cipher-algo AES256 -c stuff
@@ -148,7 +156,6 @@ testDecrypt_correctPassword(){
 }
 
 testDecrypt_incorrectPassword(){
-    cd $test_working_dir
     echo "stuff" > stuff
     gpg --batch --passphrase secret --cipher-algo AES256 -c stuff
     #to set global variables
@@ -162,7 +169,6 @@ testDecrypt_incorrectPassword(){
 }
 
 testWriteback(){
-    cd $test_working_dir
     echo "stuff" > stuff
     gpg --batch --passphrase secret --cipher-algo AES256 -c stuff
     local hash_sum=$(sha512sum stuff.gpg)
@@ -210,7 +216,6 @@ testShred_withFolders(){
 }
 
 testUntar(){
-    cd $test_working_dir
     echo "stuff" > stuff
     local hash_sum=$(sha512sum stuff)
     tar c stuff -f archive.tar
@@ -244,12 +249,13 @@ setUp(){
     mkdir -p $test_working_dir
     cp $current_directory/multigpg $test_working_dir/multigpg
     cd $test_working_dir
+    
 }
 
 tearDown(){
     rm -rf $test_working_dir
     #prevent weird error from shunit2
-    cd
+    cd /tmp
 }
 
 #Run the tests/Load the test runner
