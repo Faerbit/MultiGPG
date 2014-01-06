@@ -3,6 +3,7 @@
 #Functional tests
 
 firstLineUsage="Usage: multigpg MODE ARCHIVE [FILE]"
+test_working_dir=/tmp/test_multigpg
 
 testPrintUsageIfNoParameterWasSpecified() {
     #check only for the first line of usage
@@ -20,6 +21,18 @@ testPrintUsageIfHelpWasSpecified() {
     #check only for the first line of usage
     local output=$(./multigpg --help | head -n 1)
     assertSame "$output" "$firstLineUsage"
+}
+
+testClosedTempFileGetDeleted(){
+    fail "Implement me!"
+}
+
+testPasswordGetsPreserved(){
+    fail "Implement me!"
+}
+
+testChangePasswordOptionChangesPassword(){
+    fail "Implement me!"
 }
 
 testExistingArchiveGetsOpened(){
@@ -111,25 +124,16 @@ testWorkingDirIsChangedIfItAlreadyExists(){
     rmdir /tmp/multigpg
 }
 
-testClosedTempFileGetDeleted(){
-    fail "Implement me!"
-}
-
-testPasswordGetsPreserved(){
-    fail "Implement me!"
-}
-
-testChangePasswordOptionChangesPassword(){
-    fail "Implement me!"
-}
-
 oneTimeSetUp(){
     source multigpg
-    mkdir -p /tmp/test_multigpg
 }
 
-oneTimeTearDown(){
-    rm -rf /tmp/test_multigpg
+setUp(){
+    mkdir -p $test_working_dir
+}
+
+tearDown(){
+    rm -rf $test_working_dir
 }
 
 #Run the tests/Load the test runner
