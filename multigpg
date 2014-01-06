@@ -91,6 +91,11 @@ shred(){
     return 0
 }
 
+untar(){
+    mkdir $working_dir/archive
+    tar -C $working_dir/archive -xf $archive
+}
+
 #only start execution if script is executed directly
 if [[ $(basename $0) = "multigpg" ]]
 then

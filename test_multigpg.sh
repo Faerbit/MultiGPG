@@ -140,8 +140,6 @@ testDecrypt_correctPassword(){
     assertSame "$test_hash_sum" "$hash_sum"
     #cleanup 
     rm -rf ../stuff.gpg
-    #prevent weird error form shunit2
-    cd $cur_dir
 }
 
 testDecrypt_incorrectPassword(){
@@ -156,8 +154,6 @@ testDecrypt_incorrectPassword(){
     #cleanup
     cd $working_dir
     rm -rf ../stuff.gpg
-    #prevent weird error from shunit2
-    cd $cur_dir
 }
 
 testWriteback(){
@@ -176,8 +172,6 @@ testWriteback(){
     #cleanup 
     cd $working_dir
     rm -rf ../stuff.gpg
-    #prevent weird error from shunit2
-    cd $cur_dir
 }
 
 testShred_onlyFiles(){
@@ -187,13 +181,11 @@ testShred_onlyFiles(){
     cd $test_working_dir/shred_test
     echo "stuff" > stuff
     echo "otherstuff" > otherstuff
-    echo "foo" > "foo"
+    echo "foo" > foo
     echo "bar" > bar
     shred
     local ls_output=$(ls)
     assertSame "$ls_output" ""
-    #prevent weird error from shunit2
-    cd $cur_dir
 }
 
 testShred_withFolders(){
@@ -204,14 +196,26 @@ testShred_withFolders(){
     echo "stuff" > stuff
     mkdir otherstuff
     echo "otherstuff" > ./otherstuff/otherstuff
-    echo "foo" > "foo"
+    echo "foo" > foo
     mkdir bar
     echo "bar" > ./bar/bar
     shred
     local ls_output=$(ls)
     assertSame "$ls_output" ""
-    #prevent weird error from shunit2
-    cd $cur_dir
+}
+
+testUntar(){
+    cd $test_working_dir
+    echo "stuff" > stuff
+    local hash_sum=$(sha512sum stuff)
+    tar c stuff -f archive.tar
+    #set global variables
+    working_dir=$test_working_dir
+    archive=archive.tar
+    untar
+    cd archive
+    local test_hash_sum=$(sha512sum stuff)
+    assertSame "$test_hash_sum" "$hash_sum"
 }
 
 oneTimeSetUp(){
@@ -219,12 +223,15 @@ oneTimeSetUp(){
 }
 
 setUp(){
-    cd $cur_dir
     mkdir -p $test_working_dir
+    cd $cur_dir
 }
 
 tearDown(){
     rm -rf $test_working_dir
+    mkdir -p $test_working_dir
+    #prevent weird error from shunit2
+    cd $cur_dir
 }
 
 #Run the tests/Load the test runner
