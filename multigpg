@@ -93,11 +93,11 @@ shred(){
 
 untar(){
     mkdir $working_dir/archive
-    tar -C $working_dir/archive -xf $archive
+    tar -C $working_dir/archive -xf $working_dir/$decrypted_archive
 }
 
 pack_tar(){
-    tar -cf $archive -C $working_dir/archive .
+    tar -cf $working_dir/$decrypted_archive -C $working_dir/archive .
 }
 
 #only start execution if script is executed directly
@@ -131,7 +131,14 @@ then
     then
         getPassword
         decrypt
-        tar -r $file -f $working_dir/$decrypted_archive
+        untar
+        if ! [ -f $working_dir/archive/$(basename $file) ]
+        then
+            cp $file $working_dir/archive
+        else
+            echo "File already existed. Please use edit mode to update files."
+        fi
+        pack_tar
         writeback
         shred
     elif [[ $mode = "password" ]]

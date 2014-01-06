@@ -38,6 +38,43 @@ testCreateMode_differentPassword(){
     assertSame "$output" "Please enter the password: Please confirm your password: Passwords didn't match." 
 }
 
+testAddMode_NotDuplicate(){
+    echo -e "secret\nsecret" | ./multigpg create test 2 > /dev/null
+    echo "stuff" > stuff
+    local hash_sum=$(sha512sum stuff)
+    local output=$(echo "secret" | ./multigpg add test.tar.gpg stuff)
+    rm stuff
+    gpg --batch --passphrase secret -o test.tar -d test.tar.gpg 2>/dev/null
+    tar xf test.tar
+    local test_hash_sum=$(sha512sum stuff)
+    assertSame "$hash_sum" "$test_hash_sum"
+    assertSame "$output" "Please enter the password:"
+    local ls_output=$(ls | paste -sd " ")
+    assertSame "$ls_output" "multigpg stuff test.tar test.tar.gpg"
+}
+
+testAddMode_NotDuplicate_multipleFiles(){
+    echo -e "secret\nsecret" | ./multigpg create test 2 > /dev/null
+    echo "stuff" > stuff
+    echo "stuff" > otherstuff
+    echo "secret" | ./multigpg add test.tar.gpg stuff 2 > /dev/null
+    echo "secret" | ./multigpg add test.tar.gpg otherstuff 2 > /dev/null
+    rm stuff otherstuff
+    gpg --batch --passphrase secret -o test.tar -d test.tar.gpg 2>/dev/null
+    tar xf test.tar
+    local ls_output=$(ls | paste -sd " ")
+    assertSame "$ls_output" "multigpg otherstuff stuff test.tar test.tar.gpg"
+}
+
+testAddMode_Duplicate(){
+    echo -e "secret\nsecret" | ./multigpg create test 2 > /dev/null
+    echo "stuff" > stuff
+    echo "secret" | ./multigpg add test.tar.gpg stuff 2 > /dev/null
+    #read
+    local output=$(echo "secret" | ./multigpg add test.tar.gpg stuff| paste -sd " ")
+    assertSame "$output" "Please enter the password: File already existed. Please use edit mode to update files."
+}
+
 testClosedTempFileGetDeleted(){
     fail "Implement me!"
 }
@@ -139,7 +176,6 @@ testWorkingDirIsChangedIfItAlreadyExists(){
     #ignore error message
     rmdir /tmp/multigpg 2> /dev/null
 }
-
 testDecrypt_correctPassword(){
     echo "stuff" > stuff
     local hash_sum=$(sha512sum stuff)
@@ -221,7 +257,7 @@ testUntar(){
     tar c stuff -f archive.tar
     #set global variables
     working_dir=$test_working_dir
-    archive=archive.tar
+    decrypted_archive=archive.tar
     untar
     cd archive
     local test_hash_sum=$(sha512sum stuff)
@@ -231,14 +267,17 @@ testUntar(){
 testpack_Tar(){
     mkdir archive
     echo "stuff" > archive/stuff
+    local hash_sum=$(sha512sum archive/stuff)
     #set global variables
     working_dir=$test_working_dir
-    archive=archive.tar
+    decrypted_archive=archive.tar
     pack_tar
     rm -rf archive 
     untar
     local ls_output=$(ls archive)
+    local test_hash_sum=$(sha512sum archive/stuff)
     assertSame "$ls_output" "stuff"
+    assertSame "$test_hash_sum" "$hash_sum"
 }
 
 oneTimeSetUp(){
