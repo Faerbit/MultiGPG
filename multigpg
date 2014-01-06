@@ -89,7 +89,7 @@ shred(){
 }
 
 #only start execution if script is executed directly
-if [[ $(basename $0) = "multigpg.sh" ]]
+if [[ $(basename $0) = "multigpg" ]]
 then
     #make variables globally available
     parseParameters "$@"
