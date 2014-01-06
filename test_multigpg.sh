@@ -122,7 +122,8 @@ testWorkingDirIsChangedIfItAlreadyExists(){
     parseParameters add test_archive file
     assertNotSame "$working_dir" "/tmp/multigpg/test_archive"
     rmdir /tmp/multigpg/test_archive
-    rmdir /tmp/multigpg
+    #ignore error message
+    rmdir /tmp/multigpg 2> /dev/null
 }
 
 testDecrypt_correctPassword(){
@@ -135,7 +136,7 @@ testDecrypt_correctPassword(){
     password="secret"
     decrypt
     cd $working_dir
-    test_hash_sum=$(sha512sum stuff)
+    local test_hash_sum=$(sha512sum stuff)
     assertSame "$test_hash_sum" "$hash_sum"
     #cleanup 
     rm -rf ../stuff.gpg
@@ -153,6 +154,26 @@ testDecrypt_incorrectPassword(){
     local output=$(decrypt)
     assertSame "$output" "Your password didn't work or something else went wrong."
     #cleanup
+    cd $working_dir
+    rm -rf ../stuff.gpg
+    #prevent weird error
+    cd $cur_dir
+}
+
+testWriteback(){
+    cd $test_working_dir
+    echo "stuff" > stuff
+    gpg --batch --passphrase secret --cipher-algo AES256 -c stuff
+    local hash_sum=$(sha512sum stuff.gpg)
+    #to set global variables
+    parseParameters invalid stuff.gpg
+    password="secret"
+    decrypt
+    writeback
+    local test_hash_sum=$(sha512sum stuff.gpg)
+    #gpg archive differs because of salted passphrase
+    assertNotSame "$test_hash_sum" "$hash_sum"
+    #cleanup 
     cd $working_dir
     rm -rf ../stuff.gpg
     #prevent weird error
