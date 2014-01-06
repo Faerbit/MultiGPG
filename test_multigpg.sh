@@ -103,11 +103,15 @@ testModeGetsChosenCorrectlyIfSpecified_discard(){
     assertSame "$archive" "archive"
 }
 
-testCreateNewArchiveIfTheSpecifiedFileDoesntExist(){
-    fail "Implement me!"
+testWorkingDirIsChangedIfItAlreadyExists(){
+    mkdir -p /tmp/multigpg/test_archive
+    parseParameters add test_archive file
+    assertNotSame "$working_dir" "/tmp/multigpg/test_archive"
+    rmdir /tmp/multigpg/test_archive
+    rmdir /tmp/multigpg
 }
 
-testClosedArchiveGetsShredded(){
+testClosedTempFileGetDeleted(){
     fail "Implement me!"
 }
 
