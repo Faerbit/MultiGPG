@@ -2,23 +2,23 @@
 
 #Functional tests
 
-firstLineUsage="Usage: multigpg MODE ARCHIVE [OPTION]"
+firstLineUsage="Usage: multigpg MODE ARCHIVE [FILE]"
 
 testPrintUsageIfNoParameterWasSpecified() {
     #check only for the first line of usage
-    local output=$(./multigpg.sh | head -n 1)
+    local output=$(./multigpg | head -n 1)
     assertSame "$output" "$firstLineUsage"
 }
 
 testPrintUsageIfNoValidParametesWereSpecified() {
     #check only for the first line of usage
-    local output=$(./multigpg.sh invalid | head -n 1)
+    local output=$(./multigpg invalid | head -n 1)
     assertSame "$output" "$firstLineUsage"
 }
 
 testPrintUsageIfHelpWasSpecified() {
     #check only for the first line of usage
-    local output=$(./multigpg.sh --help | head -n 1)
+    local output=$(./multigpg --help | head -n 1)
     assertSame "$output" "$firstLineUsage"
 }
 
@@ -40,19 +40,67 @@ testFileContentGetsPreserved(){
 
 #Unit tests
 
-testModeGetsChosenIfSpecified(){
-    local output=($(parseParameters create test))
-    assertSame "${output[0]}" "create"
-    assertSame "${output[1]}" "test"
-    local output=($(parseParameters pw))
-    assertSame "${output[0]}" "password"
-    local output=($(parseParameters add test test2))
-    assertSame "${output[0]}" "add"
-    assertSame "${output[1]}" "test"
-    assertSame "${output[2]}" "test2"
-    local output=($(parseParameters e test2))
-    assertSame "${output[0]}" "add"
-    assertSame "${output[1]}" "test2"
+testModeGetsChosenCorrectlyIfSpecified_create(){
+    parseParameters create testy
+    assertSame "$mode" "create"
+    assertSame "$archive" "testy"
+    parseParameters c testy
+    assertSame "$mode" "create"
+    assertSame "$archive" "testy"
+}
+
+testModeGetsChosenCorrectlyIfSpecified_add(){
+    parseParameters add testy test2
+    assertSame "$mode" "add"
+    assertSame "$archive" "testy"
+    assertSame "$file" "test2"
+    parseParameters a testy test2
+    assertSame "$mode" "add"
+    assertSame "$archive" "testy"
+    assertSame "$file" "test2"
+}
+
+testModeGetsChosenCorrectlyIfSpecified_edit(){
+    parseParameters edit test2
+    assertSame "$mode" "edit"
+    assertSame "$archive" "test2"
+    parseParameters e test2
+    assertSame "$mode" "edit"
+    assertSame "$archive" "test2"
+}
+
+
+testModeGetsChosenCorrectlyIfSpecified_password(){
+    parseParameters password
+    assertSame "$mode" "password"
+    parseParameters pw
+    assertSame "$mode" "password"
+}
+
+testModeGetsChosenCorrectlyIfSpecified_writeback(){
+    parseParameters writeback
+    assertSame "$mode" "writeback"
+    parseParameters wb
+    assertSame "$mode" "writeback"
+    parseParameters writeback archive
+    assertSame "$mode" "writeback"
+    assertSame "$archive" "archive"
+    parseParameters wb archive
+    assertSame "$mode" "writeback"
+    assertSame "$archive" "archive"
+}
+
+testModeGetsChosenCorrectlyIfSpecified_discard(){
+    parseParameters discard
+    assertSame "$mode" "discard"
+    parseParameters d
+    assertSame "$mode" "discard"
+    parseParameters discard archive
+    assertSame "$mode" "discard"
+    assertSame "$archive" "archive"
+    parseParameters d archive
+    assertSame "$mode" "discard"
+    assertSame "$archive" "archive"
 }
 
 testCreateNewArchiveIfTheSpecifiedFileDoesntExist(){
