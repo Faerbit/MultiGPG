@@ -264,7 +264,7 @@ testUntar(){
     assertSame "$test_hash_sum" "$hash_sum"
 }
 
-testpack_Tar(){
+testPack_Tar(){
     mkdir archive
     echo "stuff" > archive/stuff
     local hash_sum=$(sha512sum archive/stuff)
