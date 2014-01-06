@@ -140,7 +140,7 @@ testDecrypt_correctPassword(){
     assertSame "$test_hash_sum" "$hash_sum"
     #cleanup 
     rm -rf ../stuff.gpg
-    #prevent weird error
+    #prevent weird error form shunit2
     cd $cur_dir
 }
 
@@ -156,7 +156,7 @@ testDecrypt_incorrectPassword(){
     #cleanup
     cd $working_dir
     rm -rf ../stuff.gpg
-    #prevent weird error
+    #prevent weird error from shunit2
     cd $cur_dir
 }
 
@@ -176,7 +176,41 @@ testWriteback(){
     #cleanup 
     cd $working_dir
     rm -rf ../stuff.gpg
-    #prevent weird error
+    #prevent weird error from shunit2
+    cd $cur_dir
+}
+
+testShred_onlyFiles(){
+    #set working dir for shred
+    working_dir=$test_working_dir/shred_test
+    mkdir $test_working_dir/shred_test
+    cd $test_working_dir/shred_test
+    echo "stuff" > stuff
+    echo "otherstuff" > otherstuff
+    echo "foo" > "foo"
+    echo "bar" > bar
+    shred
+    local ls_output=$(ls)
+    assertSame "$ls_output" ""
+    #prevent weird error from shunit2
+    cd $cur_dir
+}
+
+testShred_withFolders(){
+    #set working dir for shred
+    working_dir=$test_working_dir/shred_test
+    mkdir $test_working_dir/shred_test
+    cd $test_working_dir/shred_test
+    echo "stuff" > stuff
+    mkdir otherstuff
+    echo "otherstuff" > ./otherstuff/otherstuff
+    echo "foo" > "foo"
+    mkdir bar
+    echo "bar" > ./bar/bar
+    shred
+    local ls_output=$(ls)
+    assertSame "$ls_output" ""
+    #prevent weird error from shunit2
     cd $cur_dir
 }
 

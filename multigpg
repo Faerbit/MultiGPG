@@ -84,7 +84,8 @@ writeback(){
 shred(){
     #recursively shred all files
     find $working_dir -type f -execdir shred -un 1 '{}' \;
-    rmdir $working_dir
+    #remove remaining folders
+    rm -r $working_dir
     rmdir /tmp/multigpg 2> /dev/null
     #prevent failure exit code caused by other archives open
     return 0
