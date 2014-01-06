@@ -4,6 +4,7 @@
 
 firstLineUsage="Usage: multigpg MODE ARCHIVE [FILE]"
 test_working_dir=/tmp/test_multigpg
+cur_dir=$(pwd)
 
 testPrintUsageIfNoParameterWasSpecified() {
     #check only for the first line of usage
@@ -31,7 +32,7 @@ testPasswordGetsPreserved(){
     fail "Implement me!"
 }
 
-testChangePasswordOptionChangesPassword(){
+testChangePasswordModeChangesPassword(){
     fail "Implement me!"
 }
 
@@ -124,11 +125,46 @@ testWorkingDirIsChangedIfItAlreadyExists(){
     rmdir /tmp/multigpg
 }
 
+testDecrypt_correctPassword(){
+    cd $test_working_dir
+    echo "stuff" > stuff
+    local hash_sum=$(sha512sum stuff)
+    gpg --batch --passphrase secret --cipher-algo AES256 -c stuff
+    #to set global variables
+    parseParameters invalid stuff.gpg
+    password="secret"
+    decrypt
+    cd $working_dir
+    test_hash_sum=$(sha512sum stuff)
+    assertSame "$test_hash_sum" "$hash_sum"
+    #cleanup 
+    rm -rf ../stuff.gpg
+    #prevent weird error
+    cd $cur_dir
+}
+
+testDecrypt_incorrectPassword(){
+    cd $test_working_dir
+    echo "stuff" > stuff
+    gpg --batch --passphrase secret --cipher-algo AES256 -c stuff
+    #to set global variables
+    parseParameters invalid stuff.gpg
+    password="anothersecret"
+    local output=$(decrypt)
+    assertSame "$output" "Your password didn't work or something else went wrong."
+    #cleanup
+    cd $working_dir
+    rm -rf ../stuff.gpg
+    #prevent weird error
+    cd $cur_dir
+}
+
 oneTimeSetUp(){
     source multigpg
 }
 
 setUp(){
+    cd $cur_dir
     mkdir -p $test_working_dir
 }
 

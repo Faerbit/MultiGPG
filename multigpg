@@ -72,7 +72,8 @@ decrypt(){
     mkdir -p $working_dir
     if ! $(gpg --batch --passphrase $password -o "$working_dir/$decrypted_archive" -d $archive 2> /dev/null)
     then
-        return 1
+        echo "Your password didn't work or something else went wrong."
+        exit 1
     fi
 }
 
@@ -85,6 +86,7 @@ shred(){
     find $working_dir -type f -execdir shred -un 1 '{}' \;
     rmdir $working_dir
     rmdir /tmp/multigpg 2> /dev/null
+    #prevent failure exit code caused by other archives open
     return 0
 }
 
@@ -118,22 +120,14 @@ then
     elif [[ $mode = "add" ]]
     then
         getPassword
-        if ! $(decrypt)
-        then
-            echo "Your password didn't work or something else went wrong."
-            exit 1
-        fi
+        decrypt
         tar -r $file -f $working_dir/$decrypted_archive
         writeback
         shred
     elif [[ $mode = "password" ]]
     then
         getPassword
-        if ! $(decrypt)
-        then
-            echo "Your password didn't work or something else went wrong."
-            exit 1
-        fi
+        decrypt
         #ask for new password
         echo "Please enter new password:"
         read -s new_password
