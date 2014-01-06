@@ -125,6 +125,11 @@ testChangePasswordOptionChangesPassword(){
 
 oneTimeSetUp(){
     source multigpg
+    mkdir -p /tmp/test_multigpg
+}
+
+oneTimeTearDown(){
+    rm -rf /tmp/test_multigpg
 }
 
 #Run the tests/Load the test runner
