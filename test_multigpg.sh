@@ -72,7 +72,7 @@ testChangePasswordOptionChangesPassword(){
 }
 
 oneTimeSetUp(){
-    source multigpg.sh
+    source multigpg
 }
 
 #Run the tests/Load the test runner
