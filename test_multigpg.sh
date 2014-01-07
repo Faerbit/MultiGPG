@@ -32,6 +32,7 @@ testCreateMode_samePassword(){
 }
 
 testCreateMode_differentPassword(){
+    #simulate typo
     local output=$(echo -e "secret\nsercet" | ./multigpg create test | paste -sd " ")
     local ls_output=$(ls | paste -sd " ")
     assertSame "$ls_output" "multigpg"
@@ -75,15 +76,31 @@ testAddMode_Duplicate(){
     assertSame "$output" "Please enter the password: File already existed. Please use edit mode to update files."
 }
 
+testPasswordMode_samePassword(){
+    echo -e "secret\nsecret" | ./multigpg create test 2 > /dev/null
+    local output=$(echo -e "secret\nothersecret\nothersecret" | ./multigpg password test.tar.gpg | paste -sd " ")
+    gpg --batch --passphrase othersecret -o test.tar -d test.tar.gpg 2> /dev/null
+    local ls_output1=$(ls | paste -sd " ")
+    local ls_output2=$(ls /tmp | grep -e '^multigpg' | paste -sd " ")
+    assertSame "$output" "Please enter the password: Please enter new password: Please confirm your password:"
+    assertSame "$ls_output1" "multigpg test.tar test.tar.gpg"
+    assertSame "$ls_output2" ""
+}
+
+testPasswordMode_differentPassword(){
+    echo -e "secret\nsecret" | ./multigpg create test 2 > /dev/null
+    #simulate typo
+    local output=$(echo -e "secret\nothersecret\nothersercet" | ./multigpg password test.tar.gpg | paste -sd " ")
+    local ls_output=$(ls /tmp | grep -e '^multigpg' | paste -sd " ")
+    assertSame "$output" "Please enter the password: Please enter new password: Please confirm your password: Passwords didn't match."
+    assertSame "$ls_output" ""
+}
+
 testClosedTempFileGetDeleted(){
     fail "Implement me!"
 }
 
 testPasswordGetsPreserved(){
-    fail "Implement me!"
-}
-
-testChangePasswordModeChangesPassword(){
     fail "Implement me!"
 }
 
