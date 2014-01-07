@@ -48,6 +48,11 @@ parseParameters(){
         mode="printUsage"
     fi
     archive=$2
+    if [ ! -f $archive ] && [  $mode != "create" ]
+    then
+        echo "Archive doesn't exist. Aborting."
+        exit 1
+    fi
     file=$3
     decrypted_archive=$(basename $archive .gpg)
     working_dir=/tmp/multigpg/$archive

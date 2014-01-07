@@ -24,6 +24,12 @@ testPrintUsageIfHelpWasSpecified() {
     assertSame "$output" "$firstLineUsage"
 }
 
+testAbortingIfArchiveDoesntExist(){
+    touch testArchive.tar.gpg
+    local output=$(parseParameters invalid notTestArchive.tar.gpg)
+    assertSame "$output" "Archive doesn't exist. Aborting."
+}
+
 testCreateMode_samePassword(){
     local output=$(echo -e "secret\nsecret" | ./multigpg create test | paste -sd " ")
     local ls_output=$(ls | paste -sd " ")
@@ -128,6 +134,7 @@ testModeGetsChosenCorrectlyIfSpecified_create(){
 }
 
 testModeGetsChosenCorrectlyIfSpecified_add(){
+    touch testy
     parseParameters add testy test2
     assertSame "$mode" "add"
     assertSame "$archive" "testy"
@@ -139,6 +146,7 @@ testModeGetsChosenCorrectlyIfSpecified_add(){
 }
 
 testModeGetsChosenCorrectlyIfSpecified_edit(){
+    touch test2
     parseParameters edit test2
     assertSame "$mode" "edit"
     assertSame "$archive" "test2"
@@ -156,6 +164,7 @@ testModeGetsChosenCorrectlyIfSpecified_password(){
 }
 
 testModeGetsChosenCorrectlyIfSpecified_writeback(){
+    touch archive
     parseParameters writeback
     assertSame "$mode" "writeback"
     parseParameters wb
@@ -169,6 +178,7 @@ testModeGetsChosenCorrectlyIfSpecified_writeback(){
 }
 
 testModeGetsChosenCorrectlyIfSpecified_discard(){
+    touch archive
     parseParameters discard
     assertSame "$mode" "discard"
     parseParameters d
@@ -182,6 +192,7 @@ testModeGetsChosenCorrectlyIfSpecified_discard(){
 }
 
 testWorkingDirIsChangedIfItAlreadyExists(){
+    touch test_archive
     mkdir -p /tmp/multigpg/test_archive
     parseParameters add test_archive file
     assertNotSame "$working_dir" "/tmp/multigpg/test_archive"
