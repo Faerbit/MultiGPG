@@ -100,10 +100,6 @@ testClosedTempFileGetDeleted(){
     fail "Implement me!"
 }
 
-testPasswordGetsPreserved(){
-    fail "Implement me!"
-}
-
 testExistingArchiveGetsOpened(){
     fail "Implement me!"
 }
@@ -221,7 +217,7 @@ testDecrypt_incorrectPassword(){
     rm -rf ../stuff.gpg
 }
 
-testWriteback(){
+testWriteback_modifiesArchive(){
     echo "stuff" > stuff
     gpg --batch --passphrase secret --cipher-algo AES256 -c stuff
     local hash_sum=$(sha512sum stuff.gpg)
@@ -233,6 +229,24 @@ testWriteback(){
     local test_hash_sum=$(sha512sum stuff.gpg)
     #gpg archive differs because of salted passphrase
     assertNotSame "$test_hash_sum" "$hash_sum"
+    #cleanup 
+    cd $working_dir
+    rm -rf ../stuff.gpg
+}
+
+testWriteback_preservesPassword(){
+    echo "stuff" > stuff
+    local hash_sum=$(sha512sum stuff)
+    gpg --batch --passphrase secret --cipher-algo AES256 -c stuff
+    #to set global variables
+    parseParameters invalid stuff.gpg
+    password="secret"
+    decrypt
+    writeback
+    rm stuff
+    gpg --batch --passphrase secret -o stuff -d stuff.gpg 2> /dev/null
+    local test_hash_sum=$(sha512sum stuff)
+    assertSame "$hash_sum" "$test_hash_sum"
     #cleanup 
     cd $working_dir
     rm -rf ../stuff.gpg
