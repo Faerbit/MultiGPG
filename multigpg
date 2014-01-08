@@ -7,6 +7,8 @@ printUsage(){
     create      : Creates a new GPG-encrypted archive named ARCHIVE. Please specify file name without extensions
     a
     add         : Adds FILE to ARCHIVE
+    ex
+    extract     : Extracts FILE from ARCHIVE
     e
     edit        : Copies the contents of the archive to a /tmp folder and 
                   opens a custom shell for you to edit the contents
@@ -32,6 +34,9 @@ parseParameters(){
     elif [[ $1 = "edit" || $1 = "e" ]]
     then
         mode="edit"
+    elif [[ $1 = "extract" || $1 = "ex" ]]
+    then
+        mode="extract"
     elif [[ $1 = "password" || $1 = "pw" ]]
     then
         mode="password"
@@ -56,7 +61,7 @@ parseParameters(){
     file=$3
     decrypted_archive=$(basename $archive .gpg)
     working_dir=/tmp/multigpg/$archive
-    while [ -d $working_dir ]
+    while [[ -d $working_dir ]]
     do
         working_dir=$working_dir\_other
     done
@@ -115,7 +120,7 @@ then
         printUsage
     elif [[ $mode = "create" ]]
     then
-        if [ -f $archive\.tar.gpg ]
+        if [[ -f $archive\.tar.gpg ]]
         then
             echo "Archive already exists."
             exit 1
@@ -137,7 +142,7 @@ then
         getPassword
         decrypt
         untar
-        if ! [ -f $working_dir/archive/$(basename $file) ]
+        if ! [[ -f $working_dir/archive/$(basename $file) ]]
         then
             cp $file $working_dir/archive
         else
@@ -145,6 +150,20 @@ then
         fi
         pack_tar
         writeback
+        shred
+    elif [[ $mode = "extract" ]]
+    then
+        getPassword
+        decrypt
+        untar
+        if  [ -f $working_dir/archive/$file ]
+        then
+            cp $working_dir/archive/$file .
+        else
+            echo "File doesn't exist in this archive. Aborting."
+            shred
+            exit 1
+        fi
         shred
     elif [[ $mode = "password" ]]
     then

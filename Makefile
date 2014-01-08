@@ -2,4 +2,4 @@ all: test
 
 test:
 	clear
-	./test_multigpg.sh
+	time "./test_multigpg.sh"

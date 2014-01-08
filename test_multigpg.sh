@@ -102,6 +102,24 @@ testPasswordMode_differentPassword(){
     assertSame "$ls_output" ""
 }
 
+testExtractMode_FileExists(){
+    echo -e "secret\nsecret" | ./multigpg create test 2 > /dev/null
+    echo "stuff" > stuff
+    local hash_sum=$(sha512sum stuff)
+    echo "secret" | ./multigpg add test.tar.gpg stuff 2 > /dev/null
+    rm stuff
+    local output=$(echo "secret" | ./multigpg extract test.tar.gpg stuff | paste -sd " ")
+    local test_hash_sum=$(sha512sum stuff)
+    assertSame "$hash_sum" "$test_hash_sum"
+    assertSame "$output" "Please enter the password:"
+}
+
+testExtractMode_FileDoesntExists(){
+    echo -e "secret\nsecret" | ./multigpg create test 2 > /dev/null
+    local output=$(echo "secret" | ./multigpg extract test.tar.gpg nonexistent | paste -sd " ")
+    assertSame "$output" "Please enter the password: File doesn't exist in this archive. Aborting."
+}
+
 testClosedTempFileGetDeleted(){
     fail "Implement me!"
 }
@@ -164,31 +182,43 @@ testModeGetsChosenCorrectlyIfSpecified_password(){
 }
 
 testModeGetsChosenCorrectlyIfSpecified_writeback(){
-    touch archive
+    touch archiveee
     parseParameters writeback
     assertSame "$mode" "writeback"
     parseParameters wb
     assertSame "$mode" "writeback"
-    parseParameters writeback archive
+    parseParameters writeback archiveee
     assertSame "$mode" "writeback"
-    assertSame "$archive" "archive"
-    parseParameters wb archive
+    assertSame "$archive" "archiveee"
+    parseParameters wb archiveee
     assertSame "$mode" "writeback"
-    assertSame "$archive" "archive"
+    assertSame "$archive" "archiveee"
 }
 
 testModeGetsChosenCorrectlyIfSpecified_discard(){
-    touch archive
+    touch archiveee
     parseParameters discard
     assertSame "$mode" "discard"
     parseParameters d
     assertSame "$mode" "discard"
-    parseParameters discard archive
+    parseParameters discard archiveee
     assertSame "$mode" "discard"
-    assertSame "$archive" "archive"
-    parseParameters d archive
+    assertSame "$archive" "archiveee"
+    parseParameters d archiveee
     assertSame "$mode" "discard"
-    assertSame "$archive" "archive"
+    assertSame "$archive" "archiveee"
+}
+
+testModeGetsChosenCorrectlyIfSpecified_extract(){
+    touch archiveee
+    parseParameters extract archiveee stuff
+    assertSame "$mode" "extract"
+    assertSame "$archive" "archiveee"
+    assertSame "$file" "stuff"
+    parseParameters ex archiveee stuff
+    assertSame "$mode" "extract"
+    assertSame "$archive" "archiveee"
+    assertSame "$file" "stuff"
 }
 
 testWorkingDirIsChangedIfItAlreadyExists(){
