@@ -120,24 +120,57 @@ testExtractMode_FileDoesntExists(){
     assertSame "$output" "Please enter the password: File doesn't exist in this archive. Aborting."
 }
 
-testClosedTempFileGetDeleted(){
-    fail "Implement me!"
+testEditMode_ClosedTempFileGetDeleted(){
+    echo -e "secret\nsecret" | ./multigpg create test 2 > /dev/null
+    local output=$(echo -e "secret\ndiscard" | ./multigpg edit test.tar.gpg | paste -sd " ")
+    local ls_output=$(ls /tmp | grep -e '^multigpg' | paste -sd " ")
+    assertSame "$ls_output" ""
+    assertSame "$output" "Please enter the password: Please exit this shell with 'discard' or 'writeback'. Discarding changes."
 }
 
-testExistingArchiveGetsOpened(){
-    fail "Implement me!"
+testEditMode_ExistingArchiveGetsOpened(){
+    echo -e "secret\nsecret" | ./multigpg create test 2 > /dev/null
+    echo "stuff" > stuff
+    echo "secret" | ./multigpg add test.tar.gpg stuff 2 > /dev/null
+    local output=$(echo -e "secret\nls\ndiscard" | ./multigpg edit test.tar.gpg | paste -sd " ")
+    assertSame "$output" "Please enter the password: Please exit this shell with 'discard' or 'writeback'. stuff Discarding changes."
 }
 
-testWriteBackModifiesArchive(){
-    fail "Implement me!"
+testEditMode_WriteBackModifiesArchive(){
+    echo -e "secret\nsecret" | ./multigpg create test 2 > /dev/null
+    local hash_sum=$(sha512sum test.tar.gpg)
+    local output=$(echo -e "secret\nwriteback" | ./multigpg edit test.tar.gpg | paste -sd " ")
+    local test_hash_sum=$(sha512sum test.tar.gpg)
+    #hash differ because of salted passwords
+    assertNotSame "$hash_sum" "$test_hash_sum"
+    assertSame "$output" "Please enter the password: Please exit this shell with 'discard' or 'writeback'. Writing changes back."
 }
 
-testDiscardDoesntModifyArchive(){
-    fail "Implement me!"
+testEditMode_DiscardDoesntModifyArchive(){
+    echo -e "secret\nsecret" | ./multigpg create test 2 > /dev/null
+    local hash_sum=$(sha512sum test.tar.gpg)
+    local output=$(echo -e "secret\ndiscard" | ./multigpg edit test.tar.gpg | paste -sd " ")
+    local test_hash_sum=$(sha512sum test.tar.gpg)
+    assertSame "$hash_sum" "$test_hash_sum"
+    assertSame "$output" "Please enter the password: Please exit this shell with 'discard' or 'writeback'. Discarding changes."
 }
 
-testFileContentGetsPreserved(){
-    fail "Implement me!"
+testEditMode_FileContentGetsPreserved(){
+    echo -e "secret\nsecret" | ./multigpg create test 2 > /dev/null
+    echo "stuff" > stuff
+    local hash_sum=$(sha512sum stuff)
+    echo "secret" | ./multigpg add test.tar.gpg stuff 2 > /dev/null
+    rm stuff
+    echo -e "secret\ndiscard" | ./multigpg edit test.tar.gpg 2 > /dev/null
+    echo -e "secret" | ./multigpg extract stuff 2 > /dev/null
+    local test_hash_sum=$(sha512sum stuff)
+    assertSame "$hash_sum" "$test_hash_sum"
+}
+
+testEditMode_ExitDoesntExitShell(){
+    echo -e "secret\nsecret" | ./multigpg create test 2 > /dev/null
+    local output=$(echo -e "secret\nexit\ndiscard" | ./multigpg edit test.tar.gpg 2 > /dev/null)
+    assertSame "$output" "Please enter the password: Please exit this shell with 'discard' or 'writeback'. Please exit this shell with 'discard' or 'writeback'. Discarding changes."
 }
 
 #Unit tests
