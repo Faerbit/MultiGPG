@@ -356,6 +356,11 @@ oneTimeSetUp(){
     source multigpg
 }
 
+# delete any leftovers
+oneTimeTearDown(){
+    rm -rf /tmp/multigpg
+}
+
 setUp(){
     mkdir -p $test_working_dir
     cp $current_directory/multigpg $test_working_dir/multigpg
