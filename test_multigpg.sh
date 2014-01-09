@@ -387,11 +387,16 @@ testPack_Tar(){
 
 oneTimeSetUp(){
     source multigpg
+    #alias to simulate the script as installed in the path
+    alias multigpg='./multigpg'
+    # delete any leftovers
+    rm -rf /tmp/multigpg
 }
 
-# delete any leftovers
 oneTimeTearDown(){
+# delete any leftovers
     rm -rf /tmp/multigpg
+    unalias multigpg
 }
 
 setUp(){
