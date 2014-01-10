@@ -179,6 +179,21 @@ testExtractMode_FileDoesntExists(){
     assertSame "$output" "$string_enter_password $string_file_missing"
 }
 
+testExtractMode_all(){
+    echo -e "secret\nsecret" | ./multigpg create test 2 > /dev/null
+    mkdir some_dir
+    echo "stuff" > some_dir/stuff
+    echo "otherstuff" > otherstuff
+    echo "secret" | ./multigpg add test.tar.gpg some_dir 2 > /dev/null
+    echo "secret" | ./multigpg add test.tar.gpg otherstuff 2 > /dev/null
+    local output=$(echo "secret" | ./multigpg extract test.tar.gpg all | paste -sd " ")
+    local ls_output1=$(ls | paste -sd " ")
+    local ls_output2=$(ls some_dir)
+    assertSame "$output" "$string_enter_password"
+    assertSame "$ls_output1" "multigpg otherstuff some_dir test.tar.gpg"
+    assertSame "$ls_output2" "stuff"
+}
+
 #Unit tests
 
 testModeGetsChosenCorrectlyIfSpecified_create(){
@@ -231,7 +246,7 @@ testModeGetsChosenCorrectlyIfSpecified_list(){
     assertSame "$archive" "test_archive"
 }
 
-testModeGetsChosenCorrectlyIfSpecified_list(){
+testModeGetsChosenCorrectlyIfSpecified_delete(){
     touch test_archive
     parseParameters delete test_archive garbage
     assertSame "$mode" "delete"

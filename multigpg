@@ -175,13 +175,18 @@ then
         getPassword
         decrypt
         untar
-        if  [ -f $working_dir/archive/$file ] || [ -d $working_dir/archive/$file ]
+        if [ "$file" = "all" ]
         then
-            cp -r $working_dir/archive/$file .
+                cp -r $working_dir/archive/* .
         else
-            echo "$string_file_missing"
-            shred_tmp
-            exit 1
+            if  [ -f $working_dir/archive/$file ] || [ -d $working_dir/archive/$file ]
+            then
+                cp -r $working_dir/archive/$file .
+            else
+                echo "$string_file_missing"
+                shred_tmp
+                exit 1
+            fi
         fi
         shred_tmp
     elif [[ $mode = "password" ]]
