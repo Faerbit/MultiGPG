@@ -45,6 +45,9 @@ parseParameters(){
     elif [[ $1 = "password" || $1 = "pw" ]]
     then
         mode="password"
+    elif [[ $1 = "list" || $1 = "ls" ]]
+    then
+        mode="list"
     elif [[ $1 = "--help" ]]
     then
         mode="printUsage"
@@ -140,6 +143,13 @@ then
             echo "$string_wrong_password_typo"
             exit 1
         fi
+    elif [[ $mode = "list" ]]
+    then
+        getPassword
+        decrypt
+        untar
+        echo "$(ls $working_dir/archive)"
+        shred_tmp
     elif [[ $mode = "add" ]]
     then
         getPassword

@@ -44,6 +44,24 @@ testCreateMode_differentPassword(){
     assertSame "$output" "$string_enter_password $string_confirm_password $string_wrong_password_typo" 
 }
 
+testListMode_oneFile(){
+    echo -e "secret\nsecret" | ./multigpg create test 2 > /dev/null
+    echo "stuff" > stuff
+    echo "secret" | ./multigpg add test.tar.gpg stuff 2 > /dev/null
+    local output=$(echo "secret" | ./multigpg list test.tar.gpg | paste -sd " ")
+    assertSame "$output" "$string_enter_password stuff"
+}
+
+testListMode_multipleFiles(){
+    echo -e "secret\nsecret" | ./multigpg create test 2 > /dev/null
+    echo "stuff" > stuff
+    mkdir some_dir
+    echo "secret" | ./multigpg add test.tar.gpg stuff 2 > /dev/null
+    echo "secret" | ./multigpg add test.tar.gpg some_dir 2 > /dev/null
+    local output=$(echo "secret" | ./multigpg list test.tar.gpg | paste -sd " ")
+    assertSame "$output" "$string_enter_password some_dir stuff"
+}
+
 testAddMode_NotDuplicate(){
     echo -e "secret\nsecret" | ./multigpg create test 2 > /dev/null
     echo "stuff" > stuff
