@@ -8,7 +8,7 @@ populateStrings(){
     ls
     list        : List the contents of ARCHIVE.
     a
-    add         : Adds FILE to ARCHIVE. Specify 'all' as FILE to add the contents of the whole directory. Shreds (and removes) the files after adding them.
+    add         : Adds FILE to ARCHIVE. Shreds (and removes) the files after adding them.
     ex
     extract     : Extracts FILE from ARCHIVE. Specify 'all' as FILE to extract everything.
     d
@@ -93,7 +93,7 @@ writeback(){
     gpg --batch --yes --passphrase $password --cipher-algo AES256 -o $archive -c "$working_dir/$decrypted_archive" 
 }
 
-shred(){
+shred_tmp(){
     #recursively shred all files
     find $working_dir -type f -execdir shred -un 1 '{}' \;
     #remove remaining folders
@@ -148,6 +148,17 @@ then
         if [ ! -f $working_dir/archive/$(basename $file) ] && [ ! -d $working_dir/archive/$(basename $file) ]
         then
             cp -r $file $working_dir/archive
+            if [ -f $file ]
+            then
+                shred -un 1 $file
+            fi
+            if [ -d $file ]
+            then
+                #recursively shred all files
+                find $file -type f -execdir shred -un 1 '{}' \;
+                #remove remaining folders
+                rm -r $file
+            fi
         else
             echo "$string_replace_file"
             read confirmation
@@ -158,7 +169,7 @@ then
         fi
         pack_tar
         writeback
-        shred
+        shred_tmp
     elif [[ $mode = "extract" ]]
     then
         getPassword
@@ -169,10 +180,10 @@ then
             cp -r $working_dir/archive/$file .
         else
             echo "$string_file_missing"
-            shred
+            shred_tmp
             exit 1
         fi
-        shred
+        shred_tmp
     elif [[ $mode = "password" ]]
     then
         getPassword
@@ -187,10 +198,10 @@ then
             writeback
         else
             echo "$string_wrong_password_typo"
-            shred
+            shred_tmp
             exit 1
         fi
-        shred
+        shred_tmp
     fi
 
 fi

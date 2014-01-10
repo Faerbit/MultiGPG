@@ -49,7 +49,6 @@ testAddMode_NotDuplicate(){
     echo "stuff" > stuff
     local hash_sum=$(sha512sum stuff)
     local output=$(echo "secret" | ./multigpg add test.tar.gpg stuff)
-    rm stuff
     gpg --batch --passphrase secret -o test.tar -d test.tar.gpg 2>/dev/null
     tar xf test.tar
     local test_hash_sum=$(sha512sum stuff)
@@ -65,12 +64,29 @@ testAddMode_NotDuplicate_directory(){
     mkdir test_dir
     echo "stuff" > test_dir/stuff
     local output=$(echo "secret" | ./multigpg add test.tar.gpg test_dir)
-    rm -r test_dir
     gpg --batch --passphrase secret -o test.tar -d test.tar.gpg 2>/dev/null
     tar xf test.tar
     local ls_output=$(ls test_dir)
     assertSame "$output" "$string_enter_password"
     assertSame "$ls_output" "stuff"
+}
+
+testAddMode_ShredsFile(){
+    echo -e "secret\nsecret" | ./multigpg create test 2 > /dev/null
+    echo "stuff" > stuff
+    local output=$(echo "secret" | ./multigpg add test.tar.gpg stuff)
+    local ls_output=$(ls | paste -sd " ")
+    assertSame "$output" "$string_enter_password"
+    assertSame "$ls_output" "multigpg test.tar.gpg"
+}
+
+testAddMode_ShredsDirectory(){
+    echo -e "secret\nsecret" | ./multigpg create test 2 > /dev/null
+    mkdir stuff
+    local output=$(echo "secret" | ./multigpg add test.tar.gpg stuff)
+    local ls_output=$(ls | paste -sd " ")
+    assertSame "$output" "$string_enter_password"
+    assertSame "$ls_output" "multigpg test.tar.gpg"
 }
 
 testAddMode_NotDuplicate_multipleFiles(){
@@ -79,7 +95,6 @@ testAddMode_NotDuplicate_multipleFiles(){
     echo "stuff" > otherstuff
     echo "secret" | ./multigpg add test.tar.gpg stuff 2 > /dev/null
     echo "secret" | ./multigpg add test.tar.gpg otherstuff 2 > /dev/null
-    rm stuff otherstuff
     gpg --batch --passphrase secret -o test.tar -d test.tar.gpg 2>/dev/null
     tar xf test.tar
     local ls_output=$(ls | paste -sd " ")
@@ -109,7 +124,6 @@ testAddMode_Duplicate_dontReplace(){
     local hash_sum=$(sha512sum stuff)
     echo "secret" | ./multigpg add test.tar.gpg stuff 2 > /dev/null
     local output=$(echo -e "secret\nn" | ./multigpg add test.tar.gpg stuff| paste -sd " ")
-    rm stuff
     gpg --batch --passphrase secret -o test.tar -d test.tar.gpg 2>/dev/null
     tar xf test.tar
     local test_hash_sum=$(sha512sum stuff)
@@ -142,19 +156,17 @@ testExtractMode_FileExists(){
     echo "stuff" > stuff
     local hash_sum=$(sha512sum stuff)
     echo "secret" | ./multigpg add test.tar.gpg stuff 2 > /dev/null
-    rm stuff
     local output=$(echo "secret" | ./multigpg extract test.tar.gpg stuff | paste -sd " ")
     local test_hash_sum=$(sha512sum stuff)
     assertSame "$hash_sum" "$test_hash_sum"
     assertSame "$output" "$string_enter_password"
 }
 
-testExtractMode_FileExists_extract(){
+testExtractMode_FileExists_directory(){
     echo -e "secret\nsecret" | ./multigpg create test 2 > /dev/null
     mkdir some_dir
     echo "stuff" > some_dir/stuff
     echo "secret" | ./multigpg add test.tar.gpg some_dir 2 > /dev/null
-    rm -r some_dir
     local output=$(echo "secret" | ./multigpg extract test.tar.gpg some_dir | paste -sd " ")
     local ls_output=$(ls some_dir)
     assertSame "$output" "$string_enter_password"
@@ -313,7 +325,7 @@ testShred_onlyFiles(){
     echo "otherstuff" > otherstuff
     echo "foo" > foo
     echo "bar" > bar
-    shred
+    shred_tmp
     local ls_output=$(ls)
     assertSame "$ls_output" ""
 }
@@ -329,7 +341,7 @@ testShred_withFolders(){
     echo "foo" > foo
     mkdir bar
     echo "bar" > ./bar/bar
-    shred
+    shred_tmp
     local ls_output=$(ls)
     assertSame "$ls_output" ""
 }
