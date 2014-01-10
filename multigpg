@@ -11,8 +11,11 @@ populateStrings(){
     add         : Adds FILE to ARCHIVE. Specify 'all' as FILE to add the contents of the whole directory. Shreds (and removes) the files after adding them.
     ex
     extract     : Extracts FILE from ARCHIVE. Specify 'all' as FILE to extract everything.
+    d
+    delete      : Deletes FILE from ARCHIVE.
     pw
     password    : Changes the password of ARCHIVE
+    Note that FILE may also be a directory.
     --help      : prints this help message."
     string_archive_missing="Archive doesn't exist. Aborting."
     string_enter_password="Please enter the password:"
@@ -161,9 +164,9 @@ then
         getPassword
         decrypt
         untar
-        if  [ -f $working_dir/archive/$file ]
+        if  [ -f $working_dir/archive/$file ] || [ -d $working_dir/archive/$file ]
         then
-            cp $working_dir/archive/$file .
+            cp -r $working_dir/archive/$file .
         else
             echo "$string_file_missing"
             shred

@@ -149,7 +149,17 @@ testExtractMode_FileExists(){
     assertSame "$output" "$string_enter_password"
 }
 
-#TODO test for directories
+testExtractMode_FileExists_extract(){
+    echo -e "secret\nsecret" | ./multigpg create test 2 > /dev/null
+    mkdir some_dir
+    echo "stuff" > some_dir/stuff
+    echo "secret" | ./multigpg add test.tar.gpg some_dir 2 > /dev/null
+    rm -r some_dir
+    local output=$(echo "secret" | ./multigpg extract test.tar.gpg some_dir | paste -sd " ")
+    local ls_output=$(ls some_dir)
+    assertSame "$output" "$string_enter_password"
+    assertSame "$ls_output" "stuff"
+}
 
 testExtractMode_FileDoesntExists(){
     echo -e "secret\nsecret" | ./multigpg create test 2 > /dev/null
@@ -207,6 +217,18 @@ testModeGetsChosenCorrectlyIfSpecified_list(){
     parseParameters ls test_archive 
     assertSame "$mode" "list"
     assertSame "$archive" "test_archive"
+}
+
+testModeGetsChosenCorrectlyIfSpecified_list(){
+    touch test_archive
+    parseParameters delete test_archive garbage
+    assertSame "$mode" "delete"
+    assertSame "$archive" "test_archive"
+    assertSame "$file" "garbage"
+    parseParameters d test_archive garbage
+    assertSame "$mode" "delete"
+    assertSame "$archive" "test_archive"
+    assertSame "$file" "garbage"
 }
 
 testWorkingDirIsChangedIfItAlreadyExists(){
