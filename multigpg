@@ -26,6 +26,8 @@ populateStrings(){
     string_archive_exists="Archive already exists."
     string_file_missing="File doesn't exist in this archive. Aborting."
     string_replace_file="File already exists in this archive. Would you like to replace it?"
+    string_no_file="You didn't specify a file. Aborting."
+    string_file_not_existent="File doesn't exist. Aborting."
 }
 
 printUsage(){
@@ -64,6 +66,11 @@ parseParameters(){
         exit 1
     fi
     file=$3
+    if [[ $mode = "add"  &&  $file = ""  ||  $mode = "extract"  &&  $file = ""  ||  $mode = "delete"  &&  $file = "" ]]
+    then
+        echo "$string_no_file"
+        exit 1
+    fi
     decrypted_archive=$(basename $archive .gpg)
     working_dir=/tmp/multigpg/$archive
     if [ $mode != "discard" ] && [ $mode != "writeback" ]
@@ -155,34 +162,40 @@ then
         shred_tmp
     elif [[ $mode = "add" ]]
     then
-        getPassword
-        decrypt
-        untar
-        if [ ! -f $working_dir/archive/$(basename $file) ] && [ ! -d $working_dir/archive/$(basename $file) ]
+        if [ -f $file ] || [ -d $file ]
         then
-            cp -r $file $working_dir/archive
-            if [ -f $file ]
-            then
-                shred -un 1 $file
-            fi
-            if [ -d $file ]
-            then
-                #recursively shred all files
-                find $file -type f -execdir shred -un 1 '{}' \;
-                #remove remaining folders
-                rm -r $file
-            fi
-        else
-            echo "$string_replace_file"
-            read confirmation
-            if [ confirmation = "Y" ] || [ confirmation = "y" ]
+            getPassword
+            decrypt
+            untar
+            if [ ! -f $working_dir/archive/$(basename $file) ] && [ ! -d $working_dir/archive/$(basename $file) ]
             then
                 cp -r $file $working_dir/archive
+                if [ -f $file ]
+                then
+                    shred -un 1 $file
+                fi
+                if [ -d $file ]
+                then
+                    #recursively shred all files
+                    find $file -type f -execdir shred -un 1 '{}' \;
+                    #remove remaining folders
+                    rm -r $file
+                fi
+            else
+                echo "$string_replace_file"
+                read confirmation
+                if [ confirmation = "Y" ] || [ confirmation = "y" ]
+                then
+                    cp -r $file $working_dir/archive
+                fi
             fi
+            pack_tar
+            writeback
+            shred_tmp
+        else
+            echo "$string_file_not_existent"
+            exit 1
         fi
-        pack_tar
-        writeback
-        shred_tmp
     elif [[ $mode = "extract" ]]
     then
         getPassword

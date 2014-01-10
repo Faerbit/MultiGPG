@@ -23,12 +23,6 @@ testPrintUsageIfHelpWasSpecified() {
     assertSame "$output" "$cleansed_usage"
 }
 
-testAbortingIfArchiveDoesntExist(){
-    touch testArchive.tar.gpg
-    local output=$(parseParameters invalid notTestArchive.tar.gpg)
-    assertSame "$output" "$string_archive_missing"
-}
-
 testCreateMode_samePassword(){
     local output=$(echo -e "secret\nsecret" | ./multigpg create test | paste -sd " ")
     local ls_output=$(ls | paste -sd " ")
@@ -89,6 +83,12 @@ testAddMode_NotDuplicate_directory(){
     assertSame "$ls_output" "stuff"
 }
 
+testAddMode_FileNotExistent(){
+    echo -e "secret\nsecret" | ./multigpg create test 2 > /dev/null
+    local output=$(echo "secret" | ./multigpg add test.tar.gpg stuff)
+    assertSame "$output" "$string_file_not_existent"
+}
+
 testAddMode_ShredsFile(){
     echo -e "secret\nsecret" | ./multigpg create test 2 > /dev/null
     echo "stuff" > stuff
@@ -123,6 +123,7 @@ testAddMode_Duplicate_replace(){
     echo -e "secret\nsecret" | ./multigpg create test 2 > /dev/null
     echo "stuff" > stuff
     echo "secret" | ./multigpg add test.tar.gpg stuff 2 > /dev/null
+    echo "stuff" > stuff
     local output=$(echo -e "secret\ny" | ./multigpg add test.tar.gpg stuff| paste -sd " ")
     assertSame "$output" "$string_enter_password $string_replace_file"
 }
@@ -132,6 +133,8 @@ testAddMode_Duplicate_directory_replace(){
     mkdir test_dir
     echo "stuff" > test_dir/stuff
     echo "secret" | ./multigpg add test.tar.gpg test_dir 2 > /dev/null
+    mkdir test_dir
+    echo "stuff" > test_dir/stuff
     local output=$(echo -e "secret\ny" | ./multigpg add test.tar.gpg test_dir | paste -sd " ")
     assertSame "$output" "$string_enter_password $string_replace_file"
 }
@@ -141,6 +144,7 @@ testAddMode_Duplicate_dontReplace(){
     echo "stuff" > stuff
     local hash_sum=$(sha512sum stuff)
     echo "secret" | ./multigpg add test.tar.gpg stuff 2 > /dev/null
+    echo "stuff" > stuff
     local output=$(echo -e "secret\nn" | ./multigpg add test.tar.gpg stuff| paste -sd " ")
     gpg --batch --passphrase secret -o test.tar -d test.tar.gpg 2>/dev/null
     tar xf test.tar
@@ -306,6 +310,31 @@ testModeGetsChosenCorrectlyIfSpecified_delete(){
     assertSame "$file" "garbage"
 }
 
+testAbortingIfArchiveDoesntExist(){
+    touch testArchive.tar.gpg
+    local output=$(parseParameters invalid notTestArchive.tar.gpg)
+    assertSame "$output" "$string_archive_missing"
+}
+
+testAbortingIfNoFileIsSpecified_AddMode(){
+    touch testArchive.tar.gpg
+    local output=$(parseParameters add testArchive.tar.gpg)
+    assertSame "$output" "$string_no_file"
+}
+
+testAbortingIfNoFileIsSpecified_ExtractMode(){
+    touch testArchive.tar.gpg
+    local output=$(parseParameters extract testArchive.tar.gpg)
+    assertSame "$output" "$string_no_file"
+}
+
+testAbortingIfNoFileIsSpecified_DeleteMode(){
+    touch testArchive.tar.gpg
+    local output=$(parseParameters delete testArchive.tar.gpg)
+    assertSame "$output" "$string_no_file"
+}
+
+
 testWorkingDirIsChangedIfItAlreadyExists(){
     touch test_archive
     mkdir -p /tmp/multigpg/test_archive
@@ -439,7 +468,7 @@ testPack_Tar(){
 }
 
 oneTimeSetUp(){
-    source multigpg
+    source ./multigpg
     #populate strings globally
     populateStrings
     # delete any leftovers
