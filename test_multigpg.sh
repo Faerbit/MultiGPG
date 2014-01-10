@@ -212,6 +212,36 @@ testExtractMode_all(){
     assertSame "$ls_output2" "stuff"
 }
 
+testDeleteMode_file(){
+    echo -e "secret\nsecret" | ./multigpg create test 2 > /dev/null
+    echo "stuff" > stuff
+    echo "secret" | ./multigpg add test.tar.gpg stuff 2 > /dev/null
+    local ls_output1=$(echo "secret" | ./multigpg list test.tar.gpg | paste -sd " ")
+    local output=$(echo "secret" | ./multigpg delete test.tar.gpg stuff | paste -sd " ")
+    local ls_output2=$(echo "secret" | ./multigpg list test.tar.gpg)
+    assertSame "$output" "$string_enter_password"
+    assertSame "$ls_output1" "$string_enter_password stuff"
+    assertSame "$ls_output2" "$string_enter_password"
+}
+
+testDeleteMode_directory(){
+    echo -e "secret\nsecret" | ./multigpg create test 2 > /dev/null
+    mkdir stuff
+    echo "secret" | ./multigpg add test.tar.gpg stuff 2 > /dev/null
+    local ls_output1=$(echo "secret" | ./multigpg list test.tar.gpg | paste -sd " ")
+    local output=$(echo "secret" | ./multigpg delete test.tar.gpg stuff | paste -sd " ")
+    local ls_output2=$(echo "secret" | ./multigpg list test.tar.gpg)
+    assertSame "$output" "$string_enter_password"
+    assertSame "$ls_output1" "$string_enter_password stuff"
+    assertSame "$ls_output2" "$string_enter_password"
+}
+
+testDeleteMode_FileDoesntExist(){
+    echo -e "secret\nsecret" | ./multigpg create test 2 > /dev/null
+    local output=$(echo "secret" | ./multigpg delete test.tar.gpg stuff | paste -sd " ")
+    assertSame "$output" "$string_enter_password $string_file_missing"
+}
+
 #Unit tests
 
 testModeGetsChosenCorrectlyIfSpecified_create(){

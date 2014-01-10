@@ -8,8 +8,6 @@ Please do not change the extensions of the created files. The script relies on i
 
 Please do not test the script with the provided test script and use it at the same time. Data loss will occur!
 
-Please note that this is very WIP and doesn't work at the moment.
-
 ##Licence
 
 This is beerware, see LICENCE for details.
