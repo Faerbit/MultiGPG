@@ -124,8 +124,9 @@ testEditMode_ClosedTempFileGetDeleted(){
     echo -e "secret\nsecret" | ./multigpg create test 2 > /dev/null
     local output=$(echo -e "secret\ndiscard" | ./multigpg edit test.tar.gpg | paste -sd " ")
     local ls_output=$(ls /tmp | grep -e '^multigpg' | paste -sd " ")
+    echo "'$output'"
+    assertSame "$output" "Please enter the password: Please exit this shell with discard or writeback. Discarding changes."
     assertSame "$ls_output" ""
-    assertSame "$output" "Please enter the password: Please exit this shell with 'discard' or 'writeback'. Discarding changes."
 }
 
 testEditMode_ExistingArchiveGetsOpened(){
@@ -133,7 +134,7 @@ testEditMode_ExistingArchiveGetsOpened(){
     echo "stuff" > stuff
     echo "secret" | ./multigpg add test.tar.gpg stuff 2 > /dev/null
     local output=$(echo -e "secret\nls\ndiscard" | ./multigpg edit test.tar.gpg | paste -sd " ")
-    assertSame "$output" "Please enter the password: Please exit this shell with 'discard' or 'writeback'. stuff Discarding changes."
+    assertSame "$output" "Please enter the password: Please exit this shell with discard or writeback. stuff Discarding changes."
 }
 
 testEditMode_WriteBackModifiesArchive(){
@@ -143,7 +144,7 @@ testEditMode_WriteBackModifiesArchive(){
     local test_hash_sum=$(sha512sum test.tar.gpg)
     #hash differ because of salted passwords
     assertNotSame "$hash_sum" "$test_hash_sum"
-    assertSame "$output" "Please enter the password: Please exit this shell with 'discard' or 'writeback'. Writing changes back."
+    assertSame "$output" "Please enter the password: Please exit this shell with discard or writeback. Writing changes back."
 }
 
 testEditMode_DiscardDoesntModifyArchive(){
@@ -152,7 +153,7 @@ testEditMode_DiscardDoesntModifyArchive(){
     local output=$(echo -e "secret\ndiscard" | ./multigpg edit test.tar.gpg | paste -sd " ")
     local test_hash_sum=$(sha512sum test.tar.gpg)
     assertSame "$hash_sum" "$test_hash_sum"
-    assertSame "$output" "Please enter the password: Please exit this shell with 'discard' or 'writeback'. Discarding changes."
+    assertSame "$output" "Please enter the password: Please exit this shell with discard or writeback. Discarding changes."
 }
 
 testEditMode_FileContentGetsPreserved(){
@@ -161,17 +162,12 @@ testEditMode_FileContentGetsPreserved(){
     local hash_sum=$(sha512sum stuff)
     echo "secret" | ./multigpg add test.tar.gpg stuff 2 > /dev/null
     rm stuff
-    echo -e "secret\ndiscard" | ./multigpg edit test.tar.gpg 2 > /dev/null
-    echo -e "secret" | ./multigpg extract stuff 2 > /dev/null
+    echo -e "secret\ndiscard" | ./multigpg edit test.tar.gpg #2 > /dev/null
+    echo -e "secret" | ./multigpg extract stuff #2 > /dev/null
     local test_hash_sum=$(sha512sum stuff)
     assertSame "$hash_sum" "$test_hash_sum"
 }
 
-testEditMode_ExitDoesntExitShell(){
-    echo -e "secret\nsecret" | ./multigpg create test 2 > /dev/null
-    local output=$(echo -e "secret\nexit\ndiscard" | ./multigpg edit test.tar.gpg 2 > /dev/null)
-    assertSame "$output" "Please enter the password: Please exit this shell with 'discard' or 'writeback'. Please exit this shell with 'discard' or 'writeback'. Discarding changes."
-}
 
 #Unit tests
 
@@ -216,28 +212,20 @@ testModeGetsChosenCorrectlyIfSpecified_password(){
 
 testModeGetsChosenCorrectlyIfSpecified_writeback(){
     touch archiveee
-    parseParameters writeback
-    assertSame "$mode" "writeback"
-    parseParameters wb
-    assertSame "$mode" "writeback"
-    parseParameters writeback archiveee
+    parseParameters writeback /tmp/multigpg/archiveee
     assertSame "$mode" "writeback"
     assertSame "$archive" "archiveee"
-    parseParameters wb archiveee
+    parseParameters wb /tmp/multigpg/archiveee
     assertSame "$mode" "writeback"
     assertSame "$archive" "archiveee"
 }
 
 testModeGetsChosenCorrectlyIfSpecified_discard(){
     touch archiveee
-    parseParameters discard
-    assertSame "$mode" "discard"
-    parseParameters d
-    assertSame "$mode" "discard"
-    parseParameters discard archiveee
+    parseParameters discard /tmp/multigpg/archiveee
     assertSame "$mode" "discard"
     assertSame "$archive" "archiveee"
-    parseParameters d archiveee
+    parseParameters d /tmp/multigpg/archiveee
     assertSame "$mode" "discard"
     assertSame "$archive" "archiveee"
 }
@@ -263,6 +251,27 @@ testWorkingDirIsChangedIfItAlreadyExists(){
     #ignore error message
     rmdir /tmp/multigpg 2> /dev/null
 }
+
+testWorkingDirIsNotChangedIn_DiscardMode(){
+    touch test_archive
+    mkdir -p /tmp/multigpg/test_archive
+    parseParameters discard test_archive
+    assertSame "$working_dir" "/tmp/multigpg/test_archive"
+    rmdir /tmp/multigpg/test_archive
+    #ignore error message
+    rmdir /tmp/multigpg 2> /dev/null
+}
+
+testWorkingDirIsNotChangedIn_WritebackMode(){
+    touch test_archive
+    mkdir -p /tmp/multigpg/test_archive
+    parseParameters writeback test_archive
+    assertSame "$working_dir" "/tmp/multigpg/test_archive"
+    rmdir /tmp/multigpg/test_archive
+    #ignore error message
+    rmdir /tmp/multigpg 2> /dev/null
+}
+
 testDecrypt_correctPassword(){
     echo "stuff" > stuff
     local hash_sum=$(sha512sum stuff)
@@ -387,16 +396,15 @@ testPack_Tar(){
 
 oneTimeSetUp(){
     source multigpg
-    #alias to simulate the script as installed in the path
-    alias multigpg='./multigpg'
     # delete any leftovers
     rm -rf /tmp/multigpg
+    #emulate multigpg installed
+    PATH=$test_working_dir:$PATH
 }
 
 oneTimeTearDown(){
 # delete any leftovers
     rm -rf /tmp/multigpg
-    unalias multigpg
 }
 
 setUp(){

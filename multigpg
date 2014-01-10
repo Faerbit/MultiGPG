@@ -52,19 +52,27 @@ parseParameters(){
     else
         mode="printUsage"
     fi
-    archive=$2
-    if [ ! -f $archive ] && [  $mode != "create" ]
+    if [ $mode != "discard" ] && [ $mode != "writeback" ]
     then
-        echo "Archive doesn't exist. Aborting."
-        exit 1
+        archive=$2
+        if [ ! -f $archive ] && [  $mode != "create" ]
+        then
+            echo "Archive doesn't exist. Aborting."
+            exit 1
+        fi
+    else
+        archive=$(basename $2)
     fi
     file=$3
     decrypted_archive=$(basename $archive .gpg)
     working_dir=/tmp/multigpg/$archive
-    while [[ -d $working_dir ]]
-    do
-        working_dir=$working_dir\_other
-    done
+    if [ $mode != "discard" ] && [ $mode != "writeback" ]
+    then
+        while [ -d $working_dir ]
+        do
+            working_dir=$working_dir\_other
+        done
+    fi
 }
 
 getPassword(){
@@ -108,6 +116,15 @@ untar(){
 
 pack_tar(){
     tar -cf $working_dir/$decrypted_archive -C $working_dir/archive .
+}
+
+write_bashrc(){
+    #TODO customize commandprompt
+    local content="echo 'Please exit this shell with discard or writeback.'\n
+alias discard='multigpg discard $working_dir; exit'\n
+alias writeback='multigpg writeback $working_dir; exit'\n
+cd $working_dir/archive"
+    echo -e "$content" > $working_dir/custom_rc
 }
 
 #only start execution if script is executed directly
@@ -183,5 +200,25 @@ then
             exit 1
         fi
         shred
+    elif [ $mode = "edit" ]
+    then
+        getPassword
+        decrypt
+        untar
+        write_bashrc    
+        bash --rcfile $working_dir/custom_rc -i
+        exit
+    elif [ $mode = "discard" ]
+    then
+        echo "Discarding changes."
+        shred
+        exit
+    elif [ $mode = "writeback" ]
+    then
+        echo "Writing changes back."
+        pack_tar
+        writeback
+        exit
     fi
+
 fi
