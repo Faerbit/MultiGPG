@@ -4,11 +4,13 @@ populateStrings(){
     string_usage="Usage: multigpg MODE ARCHIVE [FILE]
     MODE is one of the following:
     c
-    create      : Creates a new GPG-encrypted archive named ARCHIVE. Please specify file name without extensions
+    create      : Creates a new GPG-encrypted archive named ARCHIVE. 
+    ls
+    list        : List the contents of ARCHIVE.
     a
-    add         : Adds FILE to ARCHIVE
+    add         : Adds FILE to ARCHIVE. Specify 'all' as FILE to add the contents of the whole directory. Shreds (and removes) the files after adding them.
     ex
-    extract     : Extracts FILE from ARCHIVE
+    extract     : Extracts FILE from ARCHIVE. Specify 'all' as FILE to extract everything.
     pw
     password    : Changes the password of ARCHIVE
     --help      : prints this help message."
@@ -20,6 +22,7 @@ populateStrings(){
     string_wrong_password_typo="Passwords didn't match."
     string_archive_exists="Archive already exists."
     string_file_missing="File doesn't exist in this archive. Aborting."
+    string_replace_file="File already exists in this archive. Would you like to replace it?"
 }
 
 printUsage(){
@@ -39,12 +42,6 @@ parseParameters(){
     elif [[ $1 = "password" || $1 = "pw" ]]
     then
         mode="password"
-    elif [[ $1 = "writeback" || $1 = "wb" ]]
-    then
-        mode="writeback"
-    elif [[ $1 = "discard" || $1 = "d" ]]
-    then
-        mode="discard"
     elif [[ $1 = "--help" ]]
     then
         mode="printUsage"
@@ -145,11 +142,16 @@ then
         getPassword
         decrypt
         untar
-        if ! [[ -f $working_dir/archive/$(basename $file) ]]
+        if [ ! -f $working_dir/archive/$(basename $file) ] && [ ! -d $working_dir/archive/$(basename $file) ]
         then
-            cp $file $working_dir/archive
+            cp -r $file $working_dir/archive
         else
-            echo "File already existed. Please use edit mode to update files."
+            echo "$string_replace_file"
+            read confirmation
+            if [ confirmation = "Y" ] || [ confirmation = "y" ]
+            then
+                cp -r $file $working_dir/archive
+            fi
         fi
         pack_tar
         writeback

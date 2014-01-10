@@ -54,10 +54,23 @@ testAddMode_NotDuplicate(){
     tar xf test.tar
     local test_hash_sum=$(sha512sum stuff)
     assertSame "$hash_sum" "$test_hash_sum"
-    assertSame "$output" "Please enter the password:"
     assertSame "$output" "$string_enter_password"
     local ls_output=$(ls | paste -sd " ")
     assertSame "$ls_output" "multigpg stuff test.tar test.tar.gpg"
+}
+
+
+testAddMode_NotDuplicate_directory(){
+    echo -e "secret\nsecret" | ./multigpg create test 2 > /dev/null
+    mkdir test_dir
+    echo "stuff" > test_dir/stuff
+    local output=$(echo "secret" | ./multigpg add test.tar.gpg test_dir)
+    rm -r test_dir
+    gpg --batch --passphrase secret -o test.tar -d test.tar.gpg 2>/dev/null
+    tar xf test.tar
+    local ls_output=$(ls test_dir)
+    assertSame "$output" "$string_enter_password"
+    assertSame "$ls_output" "stuff"
 }
 
 testAddMode_NotDuplicate_multipleFiles(){
@@ -73,13 +86,35 @@ testAddMode_NotDuplicate_multipleFiles(){
     assertSame "$ls_output" "multigpg otherstuff stuff test.tar test.tar.gpg"
 }
 
-testAddMode_Duplicate(){
+testAddMode_Duplicate_replace(){
     echo -e "secret\nsecret" | ./multigpg create test 2 > /dev/null
     echo "stuff" > stuff
     echo "secret" | ./multigpg add test.tar.gpg stuff 2 > /dev/null
-    #read
-    local output=$(echo "secret" | ./multigpg add test.tar.gpg stuff| paste -sd " ")
-    assertSame "$output" "Please enter the password: File already existed. Please use edit mode to update files."
+    local output=$(echo -e "secret\ny" | ./multigpg add test.tar.gpg stuff| paste -sd " ")
+    assertSame "$output" "$string_enter_password $string_replace_file"
+}
+
+testAddMode_Duplicate_directory_replace(){
+    echo -e "secret\nsecret" | ./multigpg create test 2 > /dev/null
+    mkdir test_dir
+    echo "stuff" > test_dir/stuff
+    echo "secret" | ./multigpg add test.tar.gpg test_dir 2 > /dev/null
+    local output=$(echo -e "secret\ny" | ./multigpg add test.tar.gpg test_dir | paste -sd " ")
+    assertSame "$output" "$string_enter_password $string_replace_file"
+}
+
+testAddMode_Duplicate_dontReplace(){
+    echo -e "secret\nsecret" | ./multigpg create test 2 > /dev/null
+    echo "stuff" > stuff
+    local hash_sum=$(sha512sum stuff)
+    echo "secret" | ./multigpg add test.tar.gpg stuff 2 > /dev/null
+    local output=$(echo -e "secret\nn" | ./multigpg add test.tar.gpg stuff| paste -sd " ")
+    rm stuff
+    gpg --batch --passphrase secret -o test.tar -d test.tar.gpg 2>/dev/null
+    tar xf test.tar
+    local test_hash_sum=$(sha512sum stuff)
+    assertSame "$output" "$string_enter_password $string_replace_file"
+    assertSame "$hash_sum" "$test_hash_sum"
 }
 
 testPasswordMode_samePassword(){
@@ -113,6 +148,8 @@ testExtractMode_FileExists(){
     assertSame "$hash_sum" "$test_hash_sum"
     assertSame "$output" "$string_enter_password"
 }
+
+#TODO test for directories
 
 testExtractMode_FileDoesntExists(){
     echo -e "secret\nsecret" | ./multigpg create test 2 > /dev/null
@@ -160,6 +197,16 @@ testModeGetsChosenCorrectlyIfSpecified_extract(){
     assertSame "$mode" "extract"
     assertSame "$archive" "archiveee"
     assertSame "$file" "stuff"
+}
+
+testModeGetsChosenCorrectlyIfSpecified_list(){
+    touch test_archive
+    parseParameters list test_archive 
+    assertSame "$mode" "list"
+    assertSame "$archive" "test_archive"
+    parseParameters ls test_archive 
+    assertSame "$mode" "list"
+    assertSame "$archive" "test_archive"
 }
 
 testWorkingDirIsChangedIfItAlreadyExists(){
