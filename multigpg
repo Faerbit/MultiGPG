@@ -1,7 +1,7 @@
 #!/bin/bash 
 
-printUsage(){
-    echo "Usage: multigpg MODE ARCHIVE [FILE]
+populateStrings(){
+    string_usage="Usage: multigpg MODE ARCHIVE [FILE]
     MODE is one of the following:
     c
     create      : Creates a new GPG-encrypted archive named ARCHIVE. Please specify file name without extensions
@@ -9,19 +9,21 @@ printUsage(){
     add         : Adds FILE to ARCHIVE
     ex
     extract     : Extracts FILE from ARCHIVE
-    e
-    edit        : Copies the contents of the archive to a /tmp folder and 
-                  opens a custom shell for you to edit the contents
     pw
     password    : Changes the password of ARCHIVE
-
-    The following commands are only available from the custom edit shell 
-    and can be executed without calling multigpg first:
-    wb
-    writeback   : saves changes back to the archive and shreds the /tmp folder
-    d
-    discard     : discards changes and shreds the /tmp folder
     --help      : prints this help message."
+    string_archive_missing="Archive doesn't exist. Aborting."
+    string_enter_password="Please enter the password:"
+    string_confirm_password="Please confirm your password:"
+    string_new_password="Please enter new password:"
+    string_wrong_password="Your password didn't work or something else went wrong."
+    string_wrong_password_typo="Passwords didn't match."
+    string_archive_exists="Archive already exists."
+    string_file_missing="File doesn't exist in this archive. Aborting."
+}
+
+printUsage(){
+    echo $string_usage
 }
 
 parseParameters(){
@@ -31,9 +33,6 @@ parseParameters(){
     elif [[ $1 = "add" || $1 = "a" ]]
     then
         mode="add"
-    elif [[ $1 = "edit" || $1 = "e" ]]
-    then
-        mode="edit"
     elif [[ $1 = "extract" || $1 = "ex" ]]
     then
         mode="extract"
@@ -52,16 +51,11 @@ parseParameters(){
     else
         mode="printUsage"
     fi
-    if [ $mode != "discard" ] && [ $mode != "writeback" ]
+    archive=$2
+    if [ ! -f $archive ] && [  $mode != "create" ]
     then
-        archive=$2
-        if [ ! -f $archive ] && [  $mode != "create" ]
-        then
-            echo "Archive doesn't exist. Aborting."
-            exit 1
-        fi
-    else
-        archive=$(basename $2)
+        echo "$string_archive_missing"
+        exit 1
     fi
     file=$3
     decrypted_archive=$(basename $archive .gpg)
@@ -76,13 +70,13 @@ parseParameters(){
 }
 
 getPassword(){
-    echo "Please enter the password:"
+    echo "$string_enter_password"
     #save password globally
     read -s password
 }
 
 confirmPassword(){
-    echo "Please confirm your password:"
+    echo "$string_confirm_password"
     read -s confirm_password
 }
 
@@ -90,7 +84,7 @@ decrypt(){
     mkdir -p $working_dir
     if ! $(gpg --batch --passphrase $password -o "$working_dir/$decrypted_archive" -d $archive 2> /dev/null)
     then
-        echo "Your password didn't work or something else went wrong."
+        echo "$string_wrong_password"
         exit 1
     fi
 }
@@ -118,19 +112,11 @@ pack_tar(){
     tar -cf $working_dir/$decrypted_archive -C $working_dir/archive .
 }
 
-write_bashrc(){
-    #TODO customize commandprompt
-    local content="echo 'Please exit this shell with discard or writeback.'\n
-alias discard='multigpg discard $working_dir; exit'\n
-alias writeback='multigpg writeback $working_dir; exit'\n
-cd $working_dir/archive"
-    echo -e "$content" > $working_dir/custom_rc
-}
-
 #only start execution if script is executed directly
 if [[ $(basename $0) = "multigpg" ]]
 then
     #make variables globally available
+    populateStrings
     parseParameters "$@"
     if [[ $mode = "printUsage" ]]
     then 
@@ -139,7 +125,7 @@ then
     then
         if [[ -f $archive\.tar.gpg ]]
         then
-            echo "Archive already exists."
+            echo "$string_archive_exists"
             exit 1
         fi
         getPassword
@@ -151,7 +137,7 @@ then
             gpg --batch --passphrase $password --cipher-algo AES256 -c $archive\.tar
             rm $archive\.tar
         else
-            echo "Passwords didn't match."
+            echo "$string_wrong_password_typo"
             exit 1
         fi
     elif [[ $mode = "add" ]]
@@ -177,7 +163,7 @@ then
         then
             cp $working_dir/archive/$file .
         else
-            echo "File doesn't exist in this archive. Aborting."
+            echo "$string_file_missing"
             shred
             exit 1
         fi
@@ -187,7 +173,7 @@ then
         getPassword
         decrypt
         #ask for new password
-        echo "Please enter new password:"
+        echo "$string_new_password"
         read -s new_password
         confirmPassword
         if [[ "$new_password" = "$confirm_password" ]]
@@ -195,30 +181,11 @@ then
             password="$new_password"
             writeback
         else
-            echo "Passwords didn't match."
+            echo "$string_wrong_password_typo"
             shred
             exit 1
         fi
         shred
-    elif [ $mode = "edit" ]
-    then
-        getPassword
-        decrypt
-        untar
-        write_bashrc    
-        bash --rcfile $working_dir/custom_rc -i
-        exit
-    elif [ $mode = "discard" ]
-    then
-        echo "Discarding changes."
-        shred
-        exit
-    elif [ $mode = "writeback" ]
-    then
-        echo "Writing changes back."
-        pack_tar
-        writeback
-        exit
     fi
 
 fi

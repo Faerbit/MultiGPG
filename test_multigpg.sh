@@ -1,40 +1,39 @@
 #!/bin/bash
 
-#Functional tests
-
-firstLineUsage="Usage: multigpg MODE ARCHIVE [FILE]"
 test_working_dir=/tmp/test_multigpg
 current_directory=$(pwd)
 
+#Functional tests
+
 testPrintUsageIfNoParameterWasSpecified() {
-    #check only for the first line of usage
-    local output=$(./multigpg | head -n 1)
-    assertSame "$output" "$firstLineUsage"
+    local output=$(./multigpg | sed 's/ //g')
+    local cleansed_usage=$(echo "$string_usage" | paste -sd " " | sed 's/ //g')
+    assertSame "$output" "$cleansed_usage"
 }
 
 testPrintUsageIfNoValidParametesWereSpecified() {
-    #check only for the first line of usage
-    local output=$(./multigpg invalid | head -n 1)
-    assertSame "$output" "$firstLineUsage"
+    local output=$(./multigpg invalid | sed 's/ //g')
+    local cleansed_usage=$(echo "$string_usage" | paste -sd " " | sed 's/ //g')
+    assertSame "$output" "$cleansed_usage"
 }
 
 testPrintUsageIfHelpWasSpecified() {
-    #check only for the first line of usage
-    local output=$(./multigpg --help | head -n 1)
-    assertSame "$output" "$firstLineUsage"
+    local output=$(./multigpg --help| sed 's/ //g')
+    local cleansed_usage=$(echo "$string_usage" | paste -sd " " | sed 's/ //g')
+    assertSame "$output" "$cleansed_usage"
 }
 
 testAbortingIfArchiveDoesntExist(){
     touch testArchive.tar.gpg
     local output=$(parseParameters invalid notTestArchive.tar.gpg)
-    assertSame "$output" "Archive doesn't exist. Aborting."
+    assertSame "$output" "$string_archive_missing"
 }
 
 testCreateMode_samePassword(){
     local output=$(echo -e "secret\nsecret" | ./multigpg create test | paste -sd " ")
     local ls_output=$(ls | paste -sd " ")
     assertSame "$ls_output" "multigpg test.tar.gpg"
-    assertSame "$output" "Please enter the password: Please confirm your password:" 
+    assertSame "$output" "$string_enter_password $string_confirm_password"
 }
 
 testCreateMode_differentPassword(){
@@ -42,7 +41,7 @@ testCreateMode_differentPassword(){
     local output=$(echo -e "secret\nsercet" | ./multigpg create test | paste -sd " ")
     local ls_output=$(ls | paste -sd " ")
     assertSame "$ls_output" "multigpg"
-    assertSame "$output" "Please enter the password: Please confirm your password: Passwords didn't match." 
+    assertSame "$output" "$string_enter_password $string_confirm_password $string_wrong_password_typo" 
 }
 
 testAddMode_NotDuplicate(){
@@ -56,6 +55,7 @@ testAddMode_NotDuplicate(){
     local test_hash_sum=$(sha512sum stuff)
     assertSame "$hash_sum" "$test_hash_sum"
     assertSame "$output" "Please enter the password:"
+    assertSame "$output" "$string_enter_password"
     local ls_output=$(ls | paste -sd " ")
     assertSame "$ls_output" "multigpg stuff test.tar test.tar.gpg"
 }
@@ -88,7 +88,7 @@ testPasswordMode_samePassword(){
     gpg --batch --passphrase othersecret -o test.tar -d test.tar.gpg 2> /dev/null
     local ls_output1=$(ls | paste -sd " ")
     local ls_output2=$(ls /tmp | grep -e '^multigpg' | paste -sd " ")
-    assertSame "$output" "Please enter the password: Please enter new password: Please confirm your password:"
+    assertSame "$output" "$string_enter_password $string_new_password $string_confirm_password"
     assertSame "$ls_output1" "multigpg test.tar test.tar.gpg"
     assertSame "$ls_output2" ""
 }
@@ -98,7 +98,7 @@ testPasswordMode_differentPassword(){
     #simulate typo
     local output=$(echo -e "secret\nothersecret\nothersercet" | ./multigpg password test.tar.gpg | paste -sd " ")
     local ls_output=$(ls /tmp | grep -e '^multigpg' | paste -sd " ")
-    assertSame "$output" "Please enter the password: Please enter new password: Please confirm your password: Passwords didn't match."
+    assertSame "$output" "$string_enter_password $string_new_password $string_confirm_password $string_wrong_password_typo"
     assertSame "$ls_output" ""
 }
 
@@ -111,63 +111,14 @@ testExtractMode_FileExists(){
     local output=$(echo "secret" | ./multigpg extract test.tar.gpg stuff | paste -sd " ")
     local test_hash_sum=$(sha512sum stuff)
     assertSame "$hash_sum" "$test_hash_sum"
-    assertSame "$output" "Please enter the password:"
+    assertSame "$output" "$string_enter_password"
 }
 
 testExtractMode_FileDoesntExists(){
     echo -e "secret\nsecret" | ./multigpg create test 2 > /dev/null
     local output=$(echo "secret" | ./multigpg extract test.tar.gpg nonexistent | paste -sd " ")
-    assertSame "$output" "Please enter the password: File doesn't exist in this archive. Aborting."
+    assertSame "$output" "$string_enter_password $string_file_missing"
 }
-
-testEditMode_ClosedTempFileGetDeleted(){
-    echo -e "secret\nsecret" | ./multigpg create test 2 > /dev/null
-    local output=$(echo -e "secret\ndiscard" | ./multigpg edit test.tar.gpg | paste -sd " ")
-    local ls_output=$(ls /tmp | grep -e '^multigpg' | paste -sd " ")
-    echo "'$output'"
-    assertSame "$output" "Please enter the password: Please exit this shell with discard or writeback. Discarding changes."
-    assertSame "$ls_output" ""
-}
-
-testEditMode_ExistingArchiveGetsOpened(){
-    echo -e "secret\nsecret" | ./multigpg create test 2 > /dev/null
-    echo "stuff" > stuff
-    echo "secret" | ./multigpg add test.tar.gpg stuff 2 > /dev/null
-    local output=$(echo -e "secret\nls\ndiscard" | ./multigpg edit test.tar.gpg | paste -sd " ")
-    assertSame "$output" "Please enter the password: Please exit this shell with discard or writeback. stuff Discarding changes."
-}
-
-testEditMode_WriteBackModifiesArchive(){
-    echo -e "secret\nsecret" | ./multigpg create test 2 > /dev/null
-    local hash_sum=$(sha512sum test.tar.gpg)
-    local output=$(echo -e "secret\nwriteback" | ./multigpg edit test.tar.gpg | paste -sd " ")
-    local test_hash_sum=$(sha512sum test.tar.gpg)
-    #hash differ because of salted passwords
-    assertNotSame "$hash_sum" "$test_hash_sum"
-    assertSame "$output" "Please enter the password: Please exit this shell with discard or writeback. Writing changes back."
-}
-
-testEditMode_DiscardDoesntModifyArchive(){
-    echo -e "secret\nsecret" | ./multigpg create test 2 > /dev/null
-    local hash_sum=$(sha512sum test.tar.gpg)
-    local output=$(echo -e "secret\ndiscard" | ./multigpg edit test.tar.gpg | paste -sd " ")
-    local test_hash_sum=$(sha512sum test.tar.gpg)
-    assertSame "$hash_sum" "$test_hash_sum"
-    assertSame "$output" "Please enter the password: Please exit this shell with discard or writeback. Discarding changes."
-}
-
-testEditMode_FileContentGetsPreserved(){
-    echo -e "secret\nsecret" | ./multigpg create test 2 > /dev/null
-    echo "stuff" > stuff
-    local hash_sum=$(sha512sum stuff)
-    echo "secret" | ./multigpg add test.tar.gpg stuff 2 > /dev/null
-    rm stuff
-    echo -e "secret\ndiscard" | ./multigpg edit test.tar.gpg #2 > /dev/null
-    echo -e "secret" | ./multigpg extract stuff #2 > /dev/null
-    local test_hash_sum=$(sha512sum stuff)
-    assertSame "$hash_sum" "$test_hash_sum"
-}
-
 
 #Unit tests
 
@@ -192,42 +143,11 @@ testModeGetsChosenCorrectlyIfSpecified_add(){
     assertSame "$file" "test2"
 }
 
-testModeGetsChosenCorrectlyIfSpecified_edit(){
-    touch test2
-    parseParameters edit test2
-    assertSame "$mode" "edit"
-    assertSame "$archive" "test2"
-    parseParameters e test2
-    assertSame "$mode" "edit"
-    assertSame "$archive" "test2"
-}
-
-
 testModeGetsChosenCorrectlyIfSpecified_password(){
     parseParameters password
     assertSame "$mode" "password"
     parseParameters pw
     assertSame "$mode" "password"
-}
-
-testModeGetsChosenCorrectlyIfSpecified_writeback(){
-    touch archiveee
-    parseParameters writeback /tmp/multigpg/archiveee
-    assertSame "$mode" "writeback"
-    assertSame "$archive" "archiveee"
-    parseParameters wb /tmp/multigpg/archiveee
-    assertSame "$mode" "writeback"
-    assertSame "$archive" "archiveee"
-}
-
-testModeGetsChosenCorrectlyIfSpecified_discard(){
-    touch archiveee
-    parseParameters discard /tmp/multigpg/archiveee
-    assertSame "$mode" "discard"
-    assertSame "$archive" "archiveee"
-    parseParameters d /tmp/multigpg/archiveee
-    assertSame "$mode" "discard"
-    assertSame "$archive" "archiveee"
 }
 
 testModeGetsChosenCorrectlyIfSpecified_extract(){
@@ -247,26 +167,6 @@ testWorkingDirIsChangedIfItAlreadyExists(){
     mkdir -p /tmp/multigpg/test_archive
     parseParameters add test_archive file
     assertNotSame "$working_dir" "/tmp/multigpg/test_archive"
-    rmdir /tmp/multigpg/test_archive
-    #ignore error message
-    rmdir /tmp/multigpg 2> /dev/null
-}
-
-testWorkingDirIsNotChangedIn_DiscardMode(){
-    touch test_archive
-    mkdir -p /tmp/multigpg/test_archive
-    parseParameters discard test_archive
-    assertSame "$working_dir" "/tmp/multigpg/test_archive"
-    rmdir /tmp/multigpg/test_archive
-    #ignore error message
-    rmdir /tmp/multigpg 2> /dev/null
-}
-
-testWorkingDirIsNotChangedIn_WritebackMode(){
-    touch test_archive
-    mkdir -p /tmp/multigpg/test_archive
-    parseParameters writeback test_archive
-    assertSame "$working_dir" "/tmp/multigpg/test_archive"
     rmdir /tmp/multigpg/test_archive
     #ignore error message
     rmdir /tmp/multigpg 2> /dev/null
@@ -294,7 +194,7 @@ testDecrypt_incorrectPassword(){
     parseParameters invalid stuff.gpg
     password="anothersecret"
     local output=$(decrypt)
-    assertSame "$output" "Your password didn't work or something else went wrong."
+    assertSame "$output" "$string_wrong_password"
     #cleanup
     cd $working_dir
     rm -rf ../stuff.gpg
@@ -396,10 +296,10 @@ testPack_Tar(){
 
 oneTimeSetUp(){
     source multigpg
+    #populate strings globally
+    populateStrings
     # delete any leftovers
     rm -rf /tmp/multigpg
-    #emulate multigpg installed
-    PATH=$test_working_dir:$PATH
 }
 
 oneTimeTearDown(){
