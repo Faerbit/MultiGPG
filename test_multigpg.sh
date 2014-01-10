@@ -6,19 +6,19 @@ current_directory=$(pwd)
 #Functional tests
 
 testPrintUsageIfNoParameterWasSpecified() {
-    local output=$(./multigpg | sed 's/ //g')
+    local output=$(./multigpg | paste -sd " " | sed 's/ //g')
     local cleansed_usage=$(echo "$string_usage" | paste -sd " " | sed 's/ //g')
     assertSame "$output" "$cleansed_usage"
 }
 
 testPrintUsageIfNoValidParametesWereSpecified() {
-    local output=$(./multigpg invalid | sed 's/ //g')
+    local output=$(./multigpg invalid | paste -sd " " | sed 's/ //g')
     local cleansed_usage=$(echo "$string_usage" | paste -sd " " | sed 's/ //g')
     assertSame "$output" "$cleansed_usage"
 }
 
 testPrintUsageIfHelpWasSpecified() {
-    local output=$(./multigpg --help| sed 's/ //g')
+    local output=$(./multigpg --help | paste -sd " " | sed 's/ //g')
     local cleansed_usage=$(echo "$string_usage" | paste -sd " " | sed 's/ //g')
     assertSame "$output" "$cleansed_usage"
 }

@@ -29,7 +29,7 @@ populateStrings(){
 }
 
 printUsage(){
-    echo $string_usage
+    echo "$string_usage"
 }
 
 parseParameters(){
