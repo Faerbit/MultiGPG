@@ -98,6 +98,7 @@ decrypt(){
     if ! $(gpg --batch --passphrase $password -o "$working_dir/$decrypted_archive" -d $archive 2> /dev/null)
     then
         echo "$string_wrong_password"
+        shred_tmp
         exit 1
     fi
 }
