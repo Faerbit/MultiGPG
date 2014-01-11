@@ -1,6 +1,6 @@
 # Maintainer: faerbit <faerbit at gmail dot com >
 
-pkgname=multigpg-git
+pkgname=multigpg
 pkgver=1.0
 pkgrel=1
 pkgdesc="A simple script that handles modifying the contents of a GPG encrypted archive."
@@ -8,6 +8,7 @@ arch=("any")
 url="https://github.com/Faerbit/MultiGPG"
 license=("custom:'BEERWARE'")
 depends=("gnupg" "bash")
+makedepends=("git")
 source=("$pkgname"::"git+https://github.com/Faerbit/MultiGPG.git#tag=RELEASE-$pkgver")
 md5sums=("SKIP")
 
