@@ -2,7 +2,7 @@
 
 pkgname=MultiGPG
 pkgver=1.0
-pkgrel=1
+pkgrel=2
 pkgdesc="A simple script that handles modifying the contents of a GPG encrypted archive."
 arch=("any")
 url="https://github.com/Faerbit/MultiGPG"
