@@ -1,6 +1,6 @@
 # Maintainer: faerbit <faerbit at gmail dot com >
 
-pkgname=MultiGPG
+pkgname=multigpg
 pkgver=1.0
 pkgrel=2
 pkgdesc="A simple script that handles modifying the contents of a GPG encrypted archive."
@@ -16,7 +16,7 @@ sha384sums=('3d4d46472b47954de06be7f0dc88252c5136ed46dbae3d9b7f741f2bcd1e7cd6519
 sha512sums=('fc0d6dc784d4e28668b31afe9c03243cd157006619fabffafbb62511c7a030aa9a85ca595af82c6844978c066f35e5f28dd022aa4c2d33e79e1888e74ffd96fa')
 
 package(){
-    cd "$srcdir/$pkgname-RELEASE-$pkgver"
+    cd "$srcdir/MultiGPG-RELEASE-$pkgver"
     install -D multigpg "$pkgdir/usr/bin/multigpg"
     install -D -m644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
 }
