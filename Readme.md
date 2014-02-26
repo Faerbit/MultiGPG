@@ -14,4 +14,4 @@ Note: I am not really happy with the name for this script. If you have any sugge
 
 ##Licence
 
-This is beerware, see LICENCE for details.
+This is work is licensed under the MIT license, see LICENSE for details.
