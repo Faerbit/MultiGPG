@@ -1,7 +1,7 @@
 language: bash
 
 before_script:
-    - curl -L "https://shunit2.googlecode.com/files/shunit2-2.1.6.tgz" | tar xf 
+    - curl -L "https://shunit2.googlecode.com/files/shunit2-2.1.6.tgz" | tar xz
 
 script:
-    - bash test_multigpg.sh
+    - bash test_multigpg.sh "shunit2-2.1.6/src/shunit2"
