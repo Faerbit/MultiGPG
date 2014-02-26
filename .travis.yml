@@ -1,9 +1,5 @@
 language: bash
 
-
-before_install:
-    sudo apt-get install gpg
-
 before_script:
     - curl -L "https://shunit2.googlecode.com/files/shunit2-2.1.6.tgz" | tar xz
     # Accommondate for shunit2 packaging
