@@ -1,7 +1,13 @@
 language: bash
 
+
+before_install:
+    sudo apt-get install gpg
+
 before_script:
     - curl -L "https://shunit2.googlecode.com/files/shunit2-2.1.6.tgz" | tar xz
+    # Accommondate for shunit2 packaging
+    - sed 's/source shunit2/source shunit2-2.1.6\/src\/shunit2/g' test_multigpg.sh > test_multigpg.sh
 
 script:
-    - bash test_multigpg.sh "shunit2-2.1.6/src/shunit2"
+    - bash test_multigpg.sh

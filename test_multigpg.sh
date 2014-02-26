@@ -494,9 +494,5 @@ tearDown(){
 }
 
 #Run the tests/Load the test runner
-if [ "$1" = "" ]
-then
-    source shunit2
-else
-    source "$1"
-fi
+
+source shunit2
