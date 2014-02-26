@@ -1,5 +1,7 @@
 #MultiGPG
 
+[![Build Status](https://travis-ci.org/Faerbit/MultiGPG.png?branch=master)](https://travis-ci.org/Faerbit/MultiGPG)
+
 This is a simple script that handles modifying the contents of a GPG encrypted archive.
 
 Execute multigpg --help to see the usage of this script.
