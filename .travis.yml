@@ -1,9 +1,12 @@
 language: bash
 
+env:
+    - SHUNIT_VERSION=2.1.6
+
 before_script:
-    - curl -L "https://shunit2.googlecode.com/files/shunit2-2.1.6.tgz" | tar xz
+    - curl -L "https://shunit2.googlecode.com/files/shunit2-$SHUNIT_VERSION.tgz" | tar xz
     # Accommondate for shunit2 packaging
-    - sed 's/source shunit2/source shunit2-2.1.6\/src\/shunit2/g' test_multigpg.sh > test_multigpg.sh
+    - sed 's/source shunit2/source shunit2-$SHUNIT_VERSION\/src\/shunit2/g' test_multigpg.sh > test_multigpg.sh
 
 script:
     - bash test_multigpg.sh
